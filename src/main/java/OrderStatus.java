@@ -1,4 +1,6 @@
-package PACKAGE_NAME;
-
 public enum OrderStatus {
+    NEW,
+    RESERVED,
+    CONFIRMED,
+    CANCELLED
 }
