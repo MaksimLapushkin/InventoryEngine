@@ -37,7 +37,7 @@ public class Main {
         Order order = new Order(1, List.of(line1, line2));
 
         // reserve order
-        stockService.reserveOrder(1, order);
+        stockService.reserveOrderAtomically(1, order);
         System.out.println("model.Order status: " + order.getStatus());
 
 
