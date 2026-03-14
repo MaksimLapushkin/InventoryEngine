@@ -1,6 +1,8 @@
+package model;
+
 public class OrderLine {
     private final int productId;
-    private int quantity;
+    private final int quantity;
 
     public OrderLine(int productId, int quantity){
         if (quantity<=0){

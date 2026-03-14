@@ -1,3 +1,8 @@
+package repository;
+
+import model.StockItem;
+import model.StockKey;
+
 import java.util.List;
 import java.util.Optional;
 

@@ -1,7 +1,10 @@
+package repository;
+
+import model.*;
 import java.util.*;
 
 public class InMemoryProductRepository implements ProductRepository {
-    Map<Integer, Product> storage = new HashMap<>();
+    private final Map<Integer, Product> storage = new HashMap<>();
 
     @Override
     public void save(Product product) {
