@@ -1,3 +1,5 @@
+package model;
+
 public class StockItem {
     private final int productId;
     private final int warehouseId;

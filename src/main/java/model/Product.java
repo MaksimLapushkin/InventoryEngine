@@ -1,3 +1,5 @@
+package model;
+
 public class Product {
     private final int id;
     private final String sku;
@@ -26,7 +28,7 @@ public class Product {
 
     @Override
     public String toString() {
-        return "Product{id=" + id +
+        return "model.Product{id=" + id +
                 ", sku=" + sku +
                 ", name='" + name +
                 "', unit=" + unit +

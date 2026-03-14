@@ -1,7 +1,10 @@
+package repository;
+
+import model.*;
 import java.util.*;
 
 public class InMemoryStockRepository implements StockRepository {
-    Map<StockKey, StockItem> storage = new HashMap<>();
+    private final Map<StockKey, StockItem> storage = new HashMap<>();
     @Override
     public void save(StockItem item) {
         StockKey key = new StockKey(item.getProductId(),item.getWarehouseId());

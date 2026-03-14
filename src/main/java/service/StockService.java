@@ -1,5 +1,7 @@
+package service;
+import model.*;
+import repository.*;
 import java.util.List;
-import java.util.Optional;
 
 public class StockService {
 
