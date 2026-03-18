@@ -38,7 +38,7 @@ public class Order {
         this.status = OrderStatus.CONFIRMED;
     }
     public void cancel(){
-        if (getStatus() != OrderStatus.CONFIRMED || getStatus() != OrderStatus.CANCELLED) {
+        if (getStatus() != OrderStatus.CONFIRMED && getStatus() != OrderStatus.CANCELLED) {
             throw new IllegalArgumentException("wrong status");
         }
         this.status = OrderStatus.CANCELLED;
