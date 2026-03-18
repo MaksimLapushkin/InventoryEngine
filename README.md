@@ -1,113 +1,164 @@
 # InventoryEngine
 
-InventoryEngine is a small backend-style project written in Java to practice core backend concepts such as service-layer architecture, data consistency, and inventory management logic.
+InventoryEngine is a backend-style Java project focused on practicing core backend engineering concepts such as service-layer architecture, data consistency, and inventory management logic.
 
-The project simulates a simple warehouse system where products can be stored, reserved for orders, and tracked through stock records.
+The system simulates a warehouse where products can be stored, reserved for orders, and tracked through stock records with atomic operations.
 
-This repository focuses on **Java Core backend fundamentals**.
+![CI](https://github.com/MaksimLapushkin/InventoryEngine/actions/workflows/maven.yml/badge.svg)
 
+---
 
 ## Features
 
 - Product management
 - Warehouse stock tracking
 - Order creation
-- Atomic stock reservation for orders
-- Prevention of partial updates during reservation
+- Atomic stock reservation (no partial updates)
+- Prevention of inconsistent states
 - Service–Repository architecture
+- In-memory data storage
 - File report generation
-- Use of Optional, Streams, and collections
+- Usage of Optional, Streams, and Collections
 
+---
 
 ## Architecture
 
-The project follows a simplified backend architecture:
+The project follows a layered backend structure:
 
 model → domain entities  
-repository → data storage layer (in-memory)  
+repository → data access layer (in-memory)  
 service → business logic  
 util → reporting utilities  
 app → application entry point  
 
 Example flow:
+
 Order → StockService → StockRepository → StockItem
+
+---
 
 ## Project Structure
 
 src/main/java
 
-model
-  Product
-  Order
-  OrderLine
-  OrderStatus
-  StockItem
-  StockKey
-  Warehouse
+model/
+Product  
+Order  
+OrderLine  
+OrderStatus  
+StockItem  
+StockKey  
+Warehouse  
 
-repository
-  ProductRepository
-  StockRepository
-  InMemoryProductRepository
-  InMemoryStockRepository
+repository/
+ProductRepository  
+StockRepository  
+InMemoryProductRepository  
+InMemoryStockRepository  
 
-service
-  ProductService
-  StockService
+service/
+ProductService  
+StockService  
 
-util
-  InventoryReportService
+util/
+InventoryReportService  
 
+Main.java
 
-Main
-
+---
 
 ## Example Scenario
-
-The application demonstrates a simple order reservation flow:
 
 1. Products are created  
 2. Stock is added to a warehouse  
 3. An order is created with multiple items  
 4. The system checks stock availability  
-5. If all items are available, the order is reserved atomically  
+5. If all items are available → reservation happens atomically  
 
-This prevents partial reservation states.
+This guarantees:
+- No partial reservations  
+- Consistent stock state  
+
+---
 
 ## Example Output
 
 Order status: RESERVED
 
-Product 1 available=18 reserved=2
-Product 2 available=15 reserved=0
-Product 3 available=27 reserved=3
+Product 1 available=18 reserved=2  
+Product 2 available=15 reserved=0  
+Product 3 available=27 reserved=3  
+
+---
+
+## Testing
+
+The project includes unit tests for core business logic:
+
+- Stock reservation
+- Stock release
+- Edge cases (not enough stock, missing stock)
+- Data consistency validation
+
+JUnit 5 + AssertJ
+
+---
+
+## CI (GitHub Actions)
+
+Runs on every push  
+Builds project with Maven  
+Executes tests automatically  
+
+---
+
+## Docker
+
+docker build -t inventory-engine .  
+docker run inventory-engine  
+
+---
+
+## How to run
+
+mvn clean package  
+java -jar target/InventoryEngine-1.0-SNAPSHOT.jar  
+
+---
 
 ## Technologies
 
-- Java
+- Java 21
+- Maven
+- JUnit 5
+- AssertJ
 - Java Collections
 - Stream API
 - Optional
-- File I/Oс
-- Basic concurrency considerations
+- File I/O
+- Basic concurrency reasoning
+
+---
 
 ## Purpose
 
-This project was created to practice backend engineering fundamentals including:
+This project was created to practice:
 
-- Object-oriented design
-- Service-layer architecture
-- Data consistency and atomic operations
-- Separation of concerns
-- Clean project structure
+- Backend architecture design
+- Service-layer logic
+- Atomic operations and data consistency
+- Clean code and structure
+- Test-driven thinking
+
+---
 
 ## Future Improvements
 
-Possible next steps:
-
 - REST API with Spring Boot
-- PostgreSQL integration with JPA/Hibernate
+- PostgreSQL + JPA/Hibernate
 - DTO layer
 - Validation
-- Unit testing with JUnit
 - Transaction management
+- Integration testing
+- Docker Compose setup
