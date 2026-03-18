@@ -9,13 +9,13 @@ import java.util.stream.Collectors;
 
 public class ProductService {
     private final ProductRepository repository;
-    private int ProductId = 0;
+    private int productId = 0;
     public ProductService(ProductRepository repository){
         this.repository=repository;
     }
 
     public Product addProduct(String sku, String name, Unit unit) {
-        Product product = new Product(ProductId++, sku, name, unit);
+        Product product = new Product(productId++, sku, name, unit);
         repository.save(product);
         return product;
     }
