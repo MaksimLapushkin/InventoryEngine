@@ -6,8 +6,6 @@ The system simulates a warehouse where products can be stored, reserved for orde
 
 ![CI](https://github.com/MaksimLapushkin/InventoryEngine/actions/workflows/maven.yml/badge.svg)
 
----
-
 Project evolution
 
 Phase 1:
@@ -15,6 +13,9 @@ Core Java implementation (in-memory repositories, service layer, atomic operatio
 
 Phase 2:
 Spring Boot migration (REST API, JPA, database integration)
+
+---
+
 
 ## Features
 
