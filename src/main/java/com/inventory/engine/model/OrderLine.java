@@ -1,4 +1,4 @@
-package model;
+package com.inventory.engine.model;
 
 public class OrderLine {
     private final int productId;

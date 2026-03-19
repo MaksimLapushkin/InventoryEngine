@@ -1,4 +1,4 @@
-package model;
+package com.inventory.engine.model;
 
 public class Product {
     private final int id;
@@ -28,7 +28,7 @@ public class Product {
 
     @Override
     public String toString() {
-        return "model.Product{id=" + id +
+        return "com.inventory.engine.model.Product{id=" + id +
                 ", sku=" + sku +
                 ", name='" + name +
                 "', unit=" + unit +

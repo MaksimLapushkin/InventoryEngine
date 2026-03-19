@@ -1,4 +1,4 @@
-package model;
+package com.inventory.engine.model;
 
 public class StockItem {
     private final int productId;

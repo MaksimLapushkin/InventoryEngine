@@ -1,6 +1,6 @@
-package util;
-import model.*;
-import repository.*;
+package com.inventory.engine.util;
+import com.inventory.engine.model.*;
+import com.inventory.engine.repository.*;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

@@ -1,7 +1,7 @@
-package repository;
+package com.inventory.engine.repository;
 
-import model.StockItem;
-import model.StockKey;
+import com.inventory.engine.model.StockItem;
+import com.inventory.engine.model.StockKey;
 
 import java.util.List;
 import java.util.Optional;

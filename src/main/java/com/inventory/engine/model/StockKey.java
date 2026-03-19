@@ -1,4 +1,4 @@
-package model;
+package com.inventory.engine.model;
 
 import java.util.Objects;
 

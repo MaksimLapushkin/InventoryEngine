@@ -1,6 +1,6 @@
-package service;
-import model.*;
-import repository.*;
+package com.inventory.engine.service;
+import com.inventory.engine.model.*;
+import com.inventory.engine.repository.*;
 import java.util.List;
 
 public class StockService {

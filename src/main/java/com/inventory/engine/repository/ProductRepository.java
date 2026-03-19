@@ -1,5 +1,5 @@
-package repository;
-import model.Product;
+package com.inventory.engine.repository;
+import com.inventory.engine.model.Product;
 
 import java.util.List;
 import java.util.Optional;

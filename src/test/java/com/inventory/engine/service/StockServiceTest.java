@@ -1,14 +1,14 @@
-package service;
+package com.inventory.engine.service;
 
-import model.StockItem;
-import model.StockKey;
+import com.inventory.engine.model.StockItem;
+import com.inventory.engine.model.StockKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import repository.InMemoryStockRepository;
-import repository.StockRepository;
+import com.inventory.engine.repository.InMemoryStockRepository;
+import com.inventory.engine.repository.StockRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -1,6 +1,6 @@
-package repository;
+package com.inventory.engine.repository;
 
-import model.*;
+import com.inventory.engine.model.*;
 import java.util.*;
 
 public class InMemoryStockRepository implements StockRepository {

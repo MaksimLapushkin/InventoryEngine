@@ -1,13 +1,13 @@
-package service;
+package com.inventory.engine.service;
 
-import model.Product;
-import model.Unit;
+import com.inventory.engine.model.Product;
+import com.inventory.engine.model.Unit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import repository.InMemoryProductRepository;
-import repository.ProductRepository;
+import com.inventory.engine.repository.InMemoryProductRepository;
+import com.inventory.engine.repository.ProductRepository;
 
 import java.util.List;
 

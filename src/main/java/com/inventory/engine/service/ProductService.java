@@ -1,8 +1,8 @@
-package service;
+package com.inventory.engine.service;
 
-import model.Product;
-import model.Unit;
-import repository.ProductRepository;
+import com.inventory.engine.model.Product;
+import com.inventory.engine.model.Unit;
+import com.inventory.engine.repository.ProductRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;

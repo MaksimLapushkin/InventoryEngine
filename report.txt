@@ -1,0 +1,4 @@
+WAREHOUSE REPORT
+product=2 available=27 reserved=3
+product=1 available=15 reserved=0
+product=0 available=18 reserved=2

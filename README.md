@@ -1,6 +1,6 @@
 # InventoryEngine
 
-InventoryEngine is a backend-style Java project focused on practicing core backend engineering concepts such as service-layer architecture, data consistency, and inventory management logic.
+InventoryEngine is a backend-style Java project focused on practicing core backend engineering concepts such as com.inventory.engine.service-layer architecture, data consistency, and inventory management logic.
 
 The system simulates a warehouse where products can be stored, reserved for orders, and tracked through stock records with atomic operations.
 
@@ -35,10 +35,10 @@ Spring Boot migration (REST API, JPA, database integration)
 
 The project follows a layered backend structure:
 
-model → domain entities  
-repository → data access layer (in-memory)  
-service → business logic  
-util → reporting utilities  
+com.inventory.engine.model → domain entities  
+com.inventory.engine.repository → data access layer (in-memory)  
+com.inventory.engine.service → business logic  
+com.inventory.engine.util → reporting utilities  
 app → application entry point  
 
 Example flow:
@@ -51,7 +51,7 @@ Order → StockService → StockRepository → StockItem
 
 src/main/java
 
-model/
+com.inventory.engine.model/
 Product  
 Order  
 OrderLine  
@@ -60,20 +60,20 @@ StockItem
 StockKey  
 Warehouse  
 
-repository/
+com.inventory.engine.repository/
 ProductRepository  
 StockRepository  
 InMemoryProductRepository  
 InMemoryStockRepository  
 
-service/
+com.inventory.engine.service/
 ProductService  
 StockService  
 
-util/
+com.inventory.engine.util/
 InventoryReportService  
 
-Main.java
+com.inventory.engine.InventoryEngineApplication.java
 
 ---
 
