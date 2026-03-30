@@ -1,8 +1,11 @@
 package com.inventory.engine.repository;
 
 import com.inventory.engine.model.*;
+import org.springframework.stereotype.Repository;
+
 import java.util.*;
 
+@Repository
 public class InMemoryProductRepository implements ProductRepository {
     private final Map<Integer, Product> storage = new HashMap<>();
 

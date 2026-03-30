@@ -1,8 +1,11 @@
 package com.inventory.engine.repository;
 
 import com.inventory.engine.model.*;
+import org.springframework.stereotype.Repository;
+
 import java.util.*;
 
+@Repository
 public class InMemoryStockRepository implements StockRepository {
     private final Map<StockKey, StockItem> storage = new HashMap<>();
     @Override
