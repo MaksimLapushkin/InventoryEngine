@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository repository;
-    private int productId = 0;
+    private Long productId = 0L;
     public ProductService(ProductRepository repository){
         this.repository=repository;
     }
@@ -24,7 +24,7 @@ public class ProductService {
         return product;
     }
 
-    public Product getProduct(int id){
+    public Product getProduct(Long id){
         return repository
                 .findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("No such product found"));

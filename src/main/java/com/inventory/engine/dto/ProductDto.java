@@ -4,19 +4,19 @@ import com.inventory.engine.model.Unit;
 
 public class ProductDto {
 
-    private final int id;
+    private final Long id;
     private final String sku;
     private final String name;
     private final Unit unit;
 
-    public ProductDto(int id, String sku, String name, Unit unit) {
+    public ProductDto(Long id, String sku, String name, Unit unit) {
         this.id = id;
         this.sku = sku;
         this.name = name;
         this.unit = unit;
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 

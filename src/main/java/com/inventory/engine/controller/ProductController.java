@@ -23,6 +23,12 @@ public class ProductController {
     public ResponseEntity<List<ProductDto>> getAll(){
         return ResponseEntity.ok(ProductMapper.toDtoList(productService.listProducts()));
     }
+
+    @GetMapping("/{id}")
+    public ProductDto getById(@PathVariable Long id) {
+        return ProductMapper.toDto(productService.getProduct(id));
+    }
+
     @PostMapping
     public ResponseEntity<ProductDto> create(@Valid @RequestBody CreateProductRequest request) {
 

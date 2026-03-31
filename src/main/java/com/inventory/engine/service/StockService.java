@@ -1,8 +1,12 @@
 package com.inventory.engine.service;
+import com.inventory.engine.dto.StockResponse;
 import com.inventory.engine.model.*;
 import com.inventory.engine.repository.*;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 
+@Service
 public class StockService {
 
     private final StockRepository repository;
@@ -11,7 +15,7 @@ public class StockService {
         this.repository = repository;
     }
 
-    public void addStock(int productId, int warehouseId, int qty) {
+    public void addStock(Long productId, Long warehouseId, int qty) {
         StockKey key = new StockKey(productId,warehouseId);
 
         StockItem stockItem = repository
@@ -21,7 +25,7 @@ public class StockService {
         repository.save(stockItem);
     }
 
-    public void reserveStock(int productId, int warehouseId, int qty) {
+    public void reserveStock(Long productId, Long warehouseId, int qty) {
         StockKey key = new StockKey(productId,warehouseId);
 
         StockItem stockItem = repository
@@ -31,7 +35,7 @@ public class StockService {
         repository.save(stockItem);
     }
 
-    public void releaseStock(int productId, int warehouseId, int qty) {
+    public void releaseStock(Long productId, Long warehouseId, int qty) {
         StockKey key = new StockKey(productId,warehouseId);
         StockItem stockItem = repository
                 .findByKey(key)
@@ -40,14 +44,14 @@ public class StockService {
         repository.save(stockItem);
     }
 
-    public void reserveOrder(int warehouseId, Order order){
+    public void reserveOrder(Long warehouseId, Order order){
         List<OrderLine> items = order.getItems();
         for (OrderLine line : items){
             reserveStock(line.getProductId(), warehouseId, line.getQuantity());
         }
         order.reserve();
     }
-    public void releaseOrderReservation(int warehouseId, Order order){
+    public void releaseOrderReservation(Long warehouseId, Order order){
         List<OrderLine> items = order.getItems();
         for (OrderLine line : items){
             releaseStock(line.getProductId(), warehouseId, line.getQuantity());
@@ -55,7 +59,7 @@ public class StockService {
         order.cancel();
     }
 
-    public void reserveOrderAtomically(int warehouseId, Order order) {
+    public void reserveOrderAtomically(Long warehouseId, Order order) {
 
         List<OrderLine> items = order.getItems();
 
@@ -81,6 +85,20 @@ public class StockService {
         }
 
         order.reserve();
+    }
+
+    public List<StockResponse> getStocks(Long productId, Long warehouseId) {
+        return repository.findAll().stream()
+                .filter(stockItem -> productId == null || stockItem.getProductId().equals(productId))
+                .filter(stockItem -> warehouseId == null || stockItem.getWarehouseId().equals(warehouseId))
+                .map(stockItem -> new StockResponse(
+                        stockItem.getProductId(),
+                        stockItem.getWarehouseId(),
+                        stockItem.getTotal(),
+                        stockItem.getReserved(),
+                        stockItem.getAvailable()
+                ))
+                .toList();
     }
 
 }

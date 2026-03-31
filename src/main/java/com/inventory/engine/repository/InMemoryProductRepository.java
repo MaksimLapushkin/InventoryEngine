@@ -7,7 +7,7 @@ import java.util.*;
 
 @Repository
 public class InMemoryProductRepository implements ProductRepository {
-    private final Map<Integer, Product> storage = new HashMap<>();
+    private final Map<Long, Product> storage = new HashMap<>();
 
     @Override
     public void save(Product product) {
@@ -15,7 +15,7 @@ public class InMemoryProductRepository implements ProductRepository {
     }
 
     @Override
-    public Optional<Product> findById(int id) {
+    public Optional<Product> findById(Long id) {
         return Optional.ofNullable(storage.get(id));
     }
 

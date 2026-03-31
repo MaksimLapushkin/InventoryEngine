@@ -72,7 +72,7 @@ class ProductServiceTest {
 
         @Test
         void shouldThrowExceptionWhenProductNotFound() {
-            assertThatThrownBy(() -> productService.getProduct(999))
+            assertThatThrownBy(() -> productService.getProduct(999L))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("No such product found");
         }

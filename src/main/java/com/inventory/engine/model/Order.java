@@ -4,17 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Order {
-    private final int id;
+    private final Long id;
     private OrderStatus status;
     private List<OrderLine> items = new ArrayList<>();
 
-    public Order(int id, List<OrderLine>items) {
+    public Order(Long id, List<OrderLine>items) {
         this.id = id;
         this.items = items;
         this.status = OrderStatus.NEW;
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 

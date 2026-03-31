@@ -1,19 +1,19 @@
 package com.inventory.engine.model;
 
 public class Product {
-    private final int id;
+    private final Long id;
     private final String sku;
     private final String name;
     private final Unit unit;
 
-    public Product(int id,String sku,String name,Unit unit){
+    public Product(Long id,String sku,String name,Unit unit){
         this.id = id;
         this.name =name;
         this.sku = sku;
         this.unit = unit;
     }
 
-    public int getId(){
+    public Long getId(){
         return id;
     }
     public String getSku(){

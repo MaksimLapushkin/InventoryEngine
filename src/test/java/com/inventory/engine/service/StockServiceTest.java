@@ -31,9 +31,9 @@ public class StockServiceTest {
 
         @Test
         void shouldIncreaseAvailableStock() {
-            stockService.addStock(0, 0, 1);
+            stockService.addStock(0L, 0L, 1);
 
-            StockItem result = stockRepository.findByKey(new StockKey(0, 0)).orElseThrow();
+            StockItem result = stockRepository.findByKey(new StockKey(0L, 0L)).orElseThrow();
 
             assertThat(result.getProductId()).isEqualTo(0);
             assertThat(result.getWarehouseId()).isEqualTo(0);
@@ -48,11 +48,11 @@ public class StockServiceTest {
 
         @Test
         void shouldReserveStockSuccessfully() {
-            stockService.addStock(0, 0, 1);
+            stockService.addStock(0L, 0L, 1);
 
-            stockService.reserveStock(0, 0, 1);
+            stockService.reserveStock(0L, 0L, 1);
 
-            StockItem result = stockRepository.findByKey(new StockKey(0, 0)).orElseThrow();
+            StockItem result = stockRepository.findByKey(new StockKey(0L, 0L)).orElseThrow();
 
             assertThat(result.getAvailable()).isEqualTo(0);
             assertThat(result.getReserved()).isEqualTo(1);
@@ -60,15 +60,15 @@ public class StockServiceTest {
 
         @Test
         void shouldThrowExceptionWhenStockNotFound(){
-            assertThatThrownBy(() -> stockService.reserveStock(999,999,999))
+            assertThatThrownBy(() -> stockService.reserveStock(999L,999L,999))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("stock not found");
         }
         @Test
         void shouldThrowExceptionWhenNotEnoughStock() {
-            stockService.addStock(0, 0, 1);
+            stockService.addStock(0L, 0L, 1);
 
-            assertThatThrownBy(() -> stockService.reserveStock(0, 0, 2))
+            assertThatThrownBy(() -> stockService.reserveStock(0L, 0L, 2))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("not enough items available");
         }
@@ -80,10 +80,10 @@ public class StockServiceTest {
 
         @Test
         void shouldReleaseStockSuccessfully(){
-            stockService.addStock(0,0,5);
-            stockService.reserveStock(0,0,3);
-            stockService.releaseStock(0,0,2);
-            StockItem result = stockRepository.findByKey(new StockKey(0, 0)).orElseThrow();
+            stockService.addStock(0L,0L,5);
+            stockService.reserveStock(0L,0L,3);
+            stockService.releaseStock(0L,0L,2);
+            StockItem result = stockRepository.findByKey(new StockKey(0L, 0L)).orElseThrow();
 
             assertThat(result.getAvailable()).isEqualTo(4);
             assertThat(result.getReserved()).isEqualTo(1);
@@ -92,9 +92,9 @@ public class StockServiceTest {
 
         @Test
         void shouldThrowExceptionWhenReleasingMoreThanReserved(){
-            stockService.addStock(0,0,5);
-            stockService.reserveStock(0,0,3);
-            assertThatThrownBy(()-> stockService.releaseStock(0,0,4))
+            stockService.addStock(0L,0L,5);
+            stockService.reserveStock(0L,0L,3);
+            assertThatThrownBy(()-> stockService.releaseStock(0L,0L,4))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("cannot release more items then reserved");
 
@@ -107,12 +107,12 @@ public class StockServiceTest {
 
         @Test
         void shouldKeepStockSeparatedByProductAndWarehouse(){
-            stockService.addStock(0,0,5);
-            stockService.addStock(0,0,2);
-            stockService.reserveStock(0,0,3);
-            stockService.addStock(1,0,5);
-            stockService.addStock(0,1,5);
-            StockItem result = stockRepository.findByKey(new StockKey(0, 0)).orElseThrow();
+            stockService.addStock(0L,0L,5);
+            stockService.addStock(0L,0L,2);
+            stockService.reserveStock(0L,0L,3);
+            stockService.addStock(1L,0L,5);
+            stockService.addStock(0L,1L,5);
+            StockItem result = stockRepository.findByKey(new StockKey(0L, 0L)).orElseThrow();
             assertThat(result.getAvailable()).isEqualTo(4);
             assertThat(result.getReserved()).isEqualTo(3);
         }

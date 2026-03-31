@@ -1,12 +1,12 @@
 package com.inventory.engine.model;
 
 public class StockItem {
-    private final int productId;
-    private final int warehouseId;
+    private final Long productId;
+    private final Long warehouseId;
     private int available;
     private int reserved;
 
-    public StockItem(int productId,int warehouseId,int available,int reserved){
+    public StockItem(Long productId,Long warehouseId,int available,int reserved){
         if (available >=0){
         this.available = available;}
         else{
@@ -19,10 +19,10 @@ public class StockItem {
             throw new IllegalArgumentException("reserved cannot be negative");}
     }
 
-    public int getProductId(){
+    public Long getProductId(){
         return productId;
     }
-    public int getWarehouseId(){
+    public Long getWarehouseId(){
         return warehouseId;
     }
     public int getAvailable(){

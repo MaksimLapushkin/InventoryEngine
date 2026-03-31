@@ -4,19 +4,19 @@ import java.util.Objects;
 
 public class StockKey {
 
-    private final int productId;
-    private final int warehouseId;
+    private final Long productId;
+    private final Long warehouseId;
 
-    public StockKey(int productId, int warehouseId) {
+    public StockKey(Long productId, Long warehouseId) {
         this.productId = productId;
         this.warehouseId = warehouseId;
     }
 
-    public int getProductId() {
+    public Long getProductId() {
         return productId;
     }
 
-    public int getWarehouseId() {
+    public Long getWarehouseId() {
         return warehouseId;
     }
 

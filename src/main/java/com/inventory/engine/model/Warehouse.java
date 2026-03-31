@@ -2,19 +2,29 @@ package com.inventory.engine.model;
 
 public class Warehouse {
 
-    private final int id;
-    private final String name;
+    private Long id;
+    private String name;
 
-    public Warehouse(int id, String name) {
+    public Warehouse() {}
+
+    public Warehouse(Long id, String name) {
         this.id = id;
         this.name = name;
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

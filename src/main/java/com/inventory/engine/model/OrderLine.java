@@ -1,17 +1,17 @@
 package com.inventory.engine.model;
 
 public class OrderLine {
-    private final int productId;
+    private final Long productId;
     private final int quantity;
 
-    public OrderLine(int productId, int quantity){
+    public OrderLine(Long productId, int quantity){
         if (quantity<=0){
             throw new IllegalArgumentException("quantity must be positive");}
         this.quantity = quantity;
         this.productId = productId;
     }
 
-    public int getProductId() {
+    public Long getProductId() {
         return productId;
     }
 
