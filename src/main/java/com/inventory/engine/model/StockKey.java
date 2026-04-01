@@ -1,11 +1,16 @@
 package com.inventory.engine.model;
 
+import jakarta.persistence.Embeddable;
+import java.io.Serializable;
 import java.util.Objects;
 
-public class StockKey {
+@Embeddable
+public class StockKey implements Serializable {
 
-    private final Long productId;
-    private final Long warehouseId;
+    private Long productId;
+    private Long warehouseId;
+
+    protected StockKey() {}
 
     public StockKey(Long productId, Long warehouseId) {
         this.productId = productId;
@@ -21,13 +26,11 @@ public class StockKey {
     }
 
     @Override
-    public boolean equals(Object  obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        StockKey Sk = (StockKey) obj;
-        return (Sk.productId==productId && Sk.warehouseId==warehouseId);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof StockKey that)) return false;
+        return Objects.equals(productId, that.productId)
+                && Objects.equals(warehouseId, that.warehouseId);
     }
 
     @Override

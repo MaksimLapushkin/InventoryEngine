@@ -1,14 +1,22 @@
 package com.inventory.engine.model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "warehouses")
 public class Warehouse {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
     private String name;
 
-    public Warehouse() {}
+    protected Warehouse() {
+    }
 
-    public Warehouse(Long id, String name) {
-        this.id = id;
+    public Warehouse(String name) {
         this.name = name;
     }
 
@@ -16,15 +24,7 @@ public class Warehouse {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }

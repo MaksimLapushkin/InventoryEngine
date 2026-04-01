@@ -1,29 +1,31 @@
 package com.inventory.engine.service;
 
+import com.inventory.engine.exception.StockNotFoundException;
 import com.inventory.engine.model.StockItem;
 import com.inventory.engine.model.StockKey;
-import org.junit.jupiter.api.BeforeEach;
+import com.inventory.engine.repository.StockRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import com.inventory.engine.repository.InMemoryStockRepository;
-import com.inventory.engine.repository.StockRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("StockService tests")
-public class StockServiceTest {
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
+class StockServiceTest {
 
-    private StockRepository stockRepository;
+    @Autowired
     private StockService stockService;
 
-    @BeforeEach
-    void setUp() {
-        stockRepository = new InMemoryStockRepository();
-        stockService = new StockService(stockRepository);
-    }
+    @Autowired
+    private StockRepository stockRepository;
 
     @Nested
     @DisplayName("addStock()")
@@ -33,10 +35,12 @@ public class StockServiceTest {
         void shouldIncreaseAvailableStock() {
             stockService.addStock(0L, 0L, 1);
 
-            StockItem result = stockRepository.findByKey(new StockKey(0L, 0L)).orElseThrow();
+            StockItem result = stockRepository
+                    .findById(new StockKey(0L, 0L))
+                    .orElseThrow();
 
-            assertThat(result.getProductId()).isEqualTo(0);
-            assertThat(result.getWarehouseId()).isEqualTo(0);
+            assertThat(result.getProductId()).isEqualTo(0L);
+            assertThat(result.getWarehouseId()).isEqualTo(0L);
             assertThat(result.getAvailable()).isEqualTo(1);
             assertThat(result.getReserved()).isEqualTo(0);
         }
@@ -52,18 +56,20 @@ public class StockServiceTest {
 
             stockService.reserveStock(0L, 0L, 1);
 
-            StockItem result = stockRepository.findByKey(new StockKey(0L, 0L)).orElseThrow();
+            StockItem result = stockRepository
+                    .findById(new StockKey(0L, 0L))
+                    .orElseThrow();
 
             assertThat(result.getAvailable()).isEqualTo(0);
             assertThat(result.getReserved()).isEqualTo(1);
         }
 
         @Test
-        void shouldThrowExceptionWhenStockNotFound(){
-            assertThatThrownBy(() -> stockService.reserveStock(999L,999L,999))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("stock not found");
+        void shouldThrowExceptionWhenStockNotFound() {
+            assertThatThrownBy(() -> stockService.reserveStock(999L, 999L, 999))
+                    .isInstanceOf(StockNotFoundException.class);
         }
+
         @Test
         void shouldThrowExceptionWhenNotEnoughStock() {
             stockService.addStock(0L, 0L, 1);
@@ -79,25 +85,27 @@ public class StockServiceTest {
     class ReleaseStockTests {
 
         @Test
-        void shouldReleaseStockSuccessfully(){
-            stockService.addStock(0L,0L,5);
-            stockService.reserveStock(0L,0L,3);
-            stockService.releaseStock(0L,0L,2);
-            StockItem result = stockRepository.findByKey(new StockKey(0L, 0L)).orElseThrow();
+        void shouldReleaseStockSuccessfully() {
+            stockService.addStock(0L, 0L, 5);
+            stockService.reserveStock(0L, 0L, 3);
+            stockService.releaseStock(0L, 0L, 2);
+
+            StockItem result = stockRepository
+                    .findById(new StockKey(0L, 0L))
+                    .orElseThrow();
 
             assertThat(result.getAvailable()).isEqualTo(4);
             assertThat(result.getReserved()).isEqualTo(1);
-
         }
 
         @Test
-        void shouldThrowExceptionWhenReleasingMoreThanReserved(){
-            stockService.addStock(0L,0L,5);
-            stockService.reserveStock(0L,0L,3);
-            assertThatThrownBy(()-> stockService.releaseStock(0L,0L,4))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("cannot release more items then reserved");
+        void shouldThrowExceptionWhenReleasingMoreThanReserved() {
+            stockService.addStock(0L, 0L, 5);
+            stockService.reserveStock(0L, 0L, 3);
 
+            assertThatThrownBy(() -> stockService.releaseStock(0L, 0L, 4))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("cannot release more items than reserved");
         }
     }
 
@@ -106,16 +114,20 @@ public class StockServiceTest {
     class GetAvailableStock {
 
         @Test
-        void shouldKeepStockSeparatedByProductAndWarehouse(){
-            stockService.addStock(0L,0L,5);
-            stockService.addStock(0L,0L,2);
-            stockService.reserveStock(0L,0L,3);
-            stockService.addStock(1L,0L,5);
-            stockService.addStock(0L,1L,5);
-            StockItem result = stockRepository.findByKey(new StockKey(0L, 0L)).orElseThrow();
+        void shouldKeepStockSeparatedByProductAndWarehouse() {
+            stockService.addStock(0L, 0L, 5);
+            stockService.addStock(0L, 0L, 2);
+            stockService.reserveStock(0L, 0L, 3);
+
+            stockService.addStock(1L, 0L, 5);
+            stockService.addStock(0L, 1L, 5);
+
+            StockItem result = stockRepository
+                    .findById(new StockKey(0L, 0L))
+                    .orElseThrow();
+
             assertThat(result.getAvailable()).isEqualTo(4);
             assertThat(result.getReserved()).isEqualTo(3);
         }
     }
-
 }

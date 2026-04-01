@@ -5,6 +5,7 @@ import com.inventory.engine.model.Product;
 import com.inventory.engine.model.Unit;
 import com.inventory.engine.repository.ProductRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,13 +14,13 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository repository;
-    private Long productId = 0L;
     public ProductService(ProductRepository repository){
         this.repository=repository;
     }
 
+    @Transactional
     public Product addProduct(String sku, String name, Unit unit) {
-        Product product = new Product(productId++, sku, name, unit);
+        Product product = new Product( sku, name, unit);
         repository.save(product);
         return product;
     }

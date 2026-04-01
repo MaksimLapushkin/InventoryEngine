@@ -1,14 +1,7 @@
 package com.inventory.engine.repository;
 
 import com.inventory.engine.model.Warehouse;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
-import java.util.Optional;
-
-public interface WarehouseRepository {
-    Warehouse save(Warehouse warehouse);
-
-    List<Warehouse> findAll();
-
-    Optional<Warehouse> findById(Long id);
+public interface WarehouseRepository extends JpaRepository<Warehouse, Long> {
 }

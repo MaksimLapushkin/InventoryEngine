@@ -1,13 +1,15 @@
 package com.inventory.engine.service;
 
+import com.inventory.engine.exception.ProductNotFoundException;
 import com.inventory.engine.model.Product;
 import com.inventory.engine.model.Unit;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import com.inventory.engine.repository.InMemoryProductRepository;
-import com.inventory.engine.repository.ProductRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,16 +17,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("ProductService tests")
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 class ProductServiceTest {
 
-    private ProductRepository productRepository;
+    @Autowired
     private ProductService productService;
-
-    @BeforeEach
-    void setUp() {
-        productRepository = new InMemoryProductRepository();
-        productService = new ProductService(productRepository);
-    }
 
     @Nested
     @DisplayName("addProduct()")
@@ -35,7 +34,7 @@ class ProductServiceTest {
             Product product = productService.addProduct("SKU-1", "Milk", Unit.PIECE);
 
             assertThat(product).isNotNull();
-            assertThat(product.getId()).isEqualTo(0);
+            assertThat(product.getId()).isNotNull();
             assertThat(product.getSku()).isEqualTo("SKU-1");
             assertThat(product.getName()).isEqualTo("Milk");
             assertThat(product.getUnit()).isEqualTo(Unit.PIECE);
@@ -73,8 +72,7 @@ class ProductServiceTest {
         @Test
         void shouldThrowExceptionWhenProductNotFound() {
             assertThatThrownBy(() -> productService.getProduct(999L))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("No such product found");
+                    .isInstanceOf(ProductNotFoundException.class);
         }
     }
 

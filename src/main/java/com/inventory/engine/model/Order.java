@@ -1,17 +1,36 @@
 package com.inventory.engine.model;
 
+import jakarta.persistence.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity
+@Table(name = "orders")
 public class Order {
-    private final Long id;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderStatus status;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderLine> items = new ArrayList<>();
 
-    public Order(Long id, List<OrderLine>items) {
-        this.id = id;
-        this.items = items;
+    protected Order() {
+    }
+
+    public Order(List<OrderLine> items) {
         this.status = OrderStatus.NEW;
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("order must contain at least one item");
+        }
+        for (OrderLine item : items) {
+            addItem(item);
+        }
     }
 
     public Long getId() {
@@ -25,21 +44,32 @@ public class Order {
     public List<OrderLine> getItems() {
         return items;
     }
-    public void reserve(){
+
+    public void addItem(OrderLine item) {
+        if (item == null) {
+            throw new IllegalArgumentException("item cannot be null");
+        }
+        item.setOrder(this);
+        items.add(item);
+    }
+
+    public void reserve() {
         if (getStatus() != OrderStatus.NEW) {
             throw new IllegalArgumentException("wrong status");
         }
         this.status = OrderStatus.RESERVED;
     }
-    public void confirm(){
+
+    public void confirm() {
         if (getStatus() != OrderStatus.RESERVED) {
             throw new IllegalArgumentException("wrong status");
         }
         this.status = OrderStatus.CONFIRMED;
     }
+
     public void cancel() {
-        if (getStatus() != OrderStatus.CONFIRMED) {
-            throw new IllegalStateException("Only CONFIRMED orders can be cancelled");
+        if (status == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("order is already cancelled");
         }
         this.status = OrderStatus.CANCELLED;
     }

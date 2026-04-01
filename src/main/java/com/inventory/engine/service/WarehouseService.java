@@ -5,6 +5,7 @@ import com.inventory.engine.model.Warehouse;
 import com.inventory.engine.repository.WarehouseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,14 +15,21 @@ public class WarehouseService {
 
     private final WarehouseRepository repository;
 
+    @Transactional
     public Warehouse create(String name) {
-        Warehouse warehouse = new Warehouse();
-        warehouse.setName(name);
-        return repository.save(warehouse);
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("empty name");
+        }
+        return repository.save(new Warehouse(name));
     }
 
     public List<Warehouse> getAll() {
         return repository.findAll();
+    }
+
+    public Warehouse getWarehouse(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new WarehouseNotFoundException(id));
     }
 
     public Warehouse getById(Long id) {

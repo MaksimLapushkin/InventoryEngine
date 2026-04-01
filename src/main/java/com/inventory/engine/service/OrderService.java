@@ -8,11 +8,13 @@ import com.inventory.engine.model.Order;
 import com.inventory.engine.model.OrderLine;
 import com.inventory.engine.repository.OrderRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 public class OrderService {
+
     private final OrderRepository repository;
     private final StockService stockService;
 
@@ -21,38 +23,42 @@ public class OrderService {
         this.stockService = stockService;
     }
 
-    public OrderResponse createOrder(CreateOrderRequest request){
+    @Transactional
+    public OrderResponse createOrder(CreateOrderRequest request) {
         List<OrderLine> lines = request.getLines().stream()
                 .map(l -> new OrderLine(l.getProductId(), l.getQuantity()))
                 .toList();
 
-        Order order = new Order(null,lines);
+        Order order = new Order(lines);
+
         return toResponse(repository.save(order));
+    }
+
+    public OrderResponse findById(Long orderId) {
+        Order order = repository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        return toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse reserve(Long orderId, Long warehouseId) {
+        Order order = repository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        stockService.reserveOrderAtomically(warehouseId, order);
+        repository.save(order);
+
+        return toResponse(order);
     }
 
     private OrderResponse toResponse(Order order) {
         return new OrderResponse(
                 order.getId(),
                 order.getItems().stream()
-                        .map(i-> new OrderLineResponse(i.getProductId(), i.getQuantity()))
+                        .map(i -> new OrderLineResponse(i.getProductId(), i.getQuantity()))
                         .toList(),
                 order.getStatus().name()
         );
-    }
-
-    public OrderResponse findById(Long orderId){
-        Order order = repository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
-
-        return toResponse(order);
-    }
-
-    public OrderResponse reserve(Long orderId, Long warehouseId){
-        Order order = repository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
-        stockService.reserveOrderAtomically(warehouseId,order);
-        repository.save(order);
-
-        return toResponse(order);
     }
 }
