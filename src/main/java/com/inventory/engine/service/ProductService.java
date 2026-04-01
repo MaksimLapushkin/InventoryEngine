@@ -1,6 +1,6 @@
 package com.inventory.engine.service;
 
-import com.inventory.engine.dto.ProductDto;
+import com.inventory.engine.exception.ProductNotFoundException;
 import com.inventory.engine.model.Product;
 import com.inventory.engine.model.Unit;
 import com.inventory.engine.repository.ProductRepository;
@@ -27,7 +27,7 @@ public class ProductService {
     public Product getProduct(Long id){
         return repository
                 .findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("No such product found"));
+                .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
     public List<Product> listProducts(){

@@ -1,10 +1,13 @@
 package com.inventory.engine.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 public class CreateOrderRequest {
-    private List<CreateOrderLineRequest> lines;
+    @NotEmpty(message = "Order must contain at least one line")
+    private List<@Valid CreateOrderLineRequest> lines;
 }

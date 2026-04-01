@@ -2,14 +2,14 @@ package com.inventory.engine.dto;
 
 import com.inventory.engine.model.Unit;
 
-public class ProductDto {
+public class ProductResponse {
 
     private final Long id;
     private final String sku;
     private final String name;
     private final Unit unit;
 
-    public ProductDto(Long id, String sku, String name, Unit unit) {
+    public ProductResponse(Long id, String sku, String name, Unit unit) {
         this.id = id;
         this.sku = sku;
         this.name = name;

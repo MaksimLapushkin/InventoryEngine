@@ -3,6 +3,7 @@ package com.inventory.engine.service;
 import com.inventory.engine.dto.CreateOrderRequest;
 import com.inventory.engine.dto.OrderLineResponse;
 import com.inventory.engine.dto.OrderResponse;
+import com.inventory.engine.exception.OrderNotFoundException;
 import com.inventory.engine.model.Order;
 import com.inventory.engine.model.OrderLine;
 import com.inventory.engine.repository.OrderRepository;
@@ -41,14 +42,14 @@ public class OrderService {
 
     public OrderResponse findById(Long orderId){
         Order order = repository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
 
         return toResponse(order);
     }
 
     public OrderResponse reserve(Long orderId, Long warehouseId){
-        Order order = repository.findById(orderId).
-                orElseThrow(() -> new RuntimeException("Order not found"));
+        Order order = repository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
         stockService.reserveOrderAtomically(warehouseId,order);
         repository.save(order);
 

@@ -24,9 +24,9 @@ public class OrderController {
         return ResponseEntity.ok(orderService.findById(id));
     }
 
-    @PostMapping("/{id}/reserve")
+    @PostMapping("/{orderId}/reserve")
     public ResponseEntity<OrderResponse> reserve (
-            @PathVariable Long orderId, @RequestBody Long warehouseId){
+            @PathVariable Long orderId, @RequestParam Long warehouseId){
         return ResponseEntity.ok(orderService.reserve(orderId,warehouseId));
     }
 }

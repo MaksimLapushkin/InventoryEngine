@@ -1,5 +1,6 @@
 package com.inventory.engine.service;
 
+import com.inventory.engine.exception.WarehouseNotFoundException;
 import com.inventory.engine.model.Warehouse;
 import com.inventory.engine.repository.WarehouseRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,6 @@ public class WarehouseService {
 
     public Warehouse getById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Warehouse not found: " + id));
+                .orElseThrow(() -> new WarehouseNotFoundException(id));
     }
 }

@@ -1,5 +1,7 @@
 package com.inventory.engine.service;
 import com.inventory.engine.dto.StockResponse;
+import com.inventory.engine.exception.NotEnoughStockException;
+import com.inventory.engine.exception.StockNotFoundException;
 import com.inventory.engine.model.*;
 import com.inventory.engine.repository.*;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,7 @@ public class StockService {
 
         StockItem stockItem = repository
                 .findByKey(key)
-                .orElseThrow(() -> new IllegalStateException("stock not found"));
+                .orElseThrow(() -> new StockNotFoundException(productId, warehouseId));
         stockItem.reserve(qty);
         repository.save(stockItem);
     }
@@ -39,7 +41,7 @@ public class StockService {
         StockKey key = new StockKey(productId,warehouseId);
         StockItem stockItem = repository
                 .findByKey(key)
-                .orElseThrow(() -> new IllegalStateException("stock not found"));
+                .orElseThrow(() -> new StockNotFoundException(productId, warehouseId));
         stockItem.releaseReservation(qty);
         repository.save(stockItem);
     }
@@ -71,10 +73,10 @@ public class StockService {
 
             StockItem stockItem = repository
                     .findByKey(key)
-                    .orElseThrow(() -> new IllegalStateException("Stock not found"));
+                    .orElseThrow(() -> new StockNotFoundException(line.getProductId(), warehouseId));
 
             if (stockItem.getAvailable() < line.getQuantity()) {
-                throw new IllegalStateException("Not enough stock");
+                throw new NotEnoughStockException(line.getProductId(), warehouseId);
             }
         }
 

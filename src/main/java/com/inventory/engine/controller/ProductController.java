@@ -2,7 +2,7 @@ package com.inventory.engine.controller;
 
 
 import com.inventory.engine.dto.CreateProductRequest;
-import com.inventory.engine.dto.ProductDto;
+import com.inventory.engine.dto.ProductResponse;
 import com.inventory.engine.mapper.ProductMapper;
 import com.inventory.engine.model.Product;
 import com.inventory.engine.service.ProductService;
@@ -20,17 +20,17 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<List<ProductDto>> getAll(){
+    public ResponseEntity<List<ProductResponse>> getAll(){
         return ResponseEntity.ok(ProductMapper.toDtoList(productService.listProducts()));
     }
 
     @GetMapping("/{id}")
-    public ProductDto getById(@PathVariable Long id) {
+    public ProductResponse getById(@PathVariable Long id) {
         return ProductMapper.toDto(productService.getProduct(id));
     }
 
     @PostMapping
-    public ResponseEntity<ProductDto> create(@Valid @RequestBody CreateProductRequest request) {
+    public ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProductRequest request) {
 
         Product product = productService.addProduct(
                 request.getSku(),
