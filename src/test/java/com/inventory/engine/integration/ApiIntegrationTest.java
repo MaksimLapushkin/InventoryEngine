@@ -34,7 +34,8 @@ class ApiIntegrationTest extends PostgresContainerTestBase {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        Long productId = JsonPath.read(productResult.getResponse().getContentAsString(), "$.id");
+        Number productIdValue = JsonPath.read(productResult.getResponse().getContentAsString(), "$.id");
+        long productId = productIdValue.longValue();
 
         MvcResult warehouseResult = mockMvc.perform(post("/api/warehouses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -42,7 +43,8 @@ class ApiIntegrationTest extends PostgresContainerTestBase {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        Long warehouseId = JsonPath.read(warehouseResult.getResponse().getContentAsString(), "$.id");
+        Number warehouseIdValue = JsonPath.read(warehouseResult.getResponse().getContentAsString(), "$.id");
+        long warehouseId = warehouseIdValue.longValue();
 
         mockMvc.perform(post("/api/stocks/add")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -56,7 +58,8 @@ class ApiIntegrationTest extends PostgresContainerTestBase {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        Long orderId = JsonPath.read(orderResult.getResponse().getContentAsString(), "$.id");
+        Number orderIdValue = JsonPath.read(orderResult.getResponse().getContentAsString(), "$.id");
+        long orderId = orderIdValue.longValue();
 
         mockMvc.perform(post("/api/orders/" + orderId + "/reserve")
                         .param("warehouseId", warehouseId.toString()))
