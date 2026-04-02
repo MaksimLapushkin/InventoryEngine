@@ -33,7 +33,7 @@ public class OrderController {
     public ResponseEntity<OrderResponse> create (@Valid @RequestBody CreateOrderRequest request){
         OrderResponse response = orderService.createOrder(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
+                .path("/{orderId}")
                 .buildAndExpand(response.getId())
                 .toUri();
         return ResponseEntity.created(location).body(response);
@@ -48,14 +48,14 @@ public class OrderController {
         return ResponseEntity.ok(orderService.listOrders());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{orderId}")
     @Operation(summary = "Get order by id")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Order retrieved"),
             @ApiResponse(responseCode = "404", description = "Order not found")
     })
-    public ResponseEntity<OrderResponse> get (@PathVariable Long id){
-        return ResponseEntity.ok(orderService.findById(id));
+    public ResponseEntity<OrderResponse> get (@PathVariable Long orderId){
+        return ResponseEntity.ok(orderService.findById(orderId));
     }
 
     @PostMapping("/{orderId}/reserve")
