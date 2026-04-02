@@ -2,15 +2,15 @@ package com.inventory.engine.controller;
 
 import com.inventory.engine.model.Warehouse;
 import com.inventory.engine.service.WarehouseService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -19,17 +19,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@WebMvcTest(WarehouseController.class)
 class WarehouseControllerTest {
 
+    @Autowired
     private MockMvc mockMvc;
-    private WarehouseService warehouseService;
 
-    @BeforeEach
-    void setUp() {
-        warehouseService = mock(WarehouseService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new WarehouseController(warehouseService))
-                .build();
-    }
+    @MockitoBean
+    private WarehouseService warehouseService;
 
     @Test
     void shouldReturnCreatedOnCreate() throws Exception {

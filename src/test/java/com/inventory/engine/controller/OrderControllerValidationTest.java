@@ -2,34 +2,28 @@ package com.inventory.engine.controller;
 
 import com.inventory.engine.exception.GlobalExceptionHandler;
 import com.inventory.engine.service.OrderService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@WebMvcTest(OrderController.class)
+@Import(GlobalExceptionHandler.class)
 class OrderControllerValidationTest {
 
+    @Autowired
     private MockMvc mockMvc;
-    private OrderService orderService;
 
-    @BeforeEach
-    void setUp() {
-        orderService = mock(OrderService.class);
-        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-        validator.afterPropertiesSet();
-        mockMvc = MockMvcBuilders.standaloneSetup(new OrderController(orderService))
-                .setValidator(validator)
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
-    }
+    @MockitoBean
+    private OrderService orderService;
 
     @Test
     void shouldRejectEmptyLines() throws Exception {
