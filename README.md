@@ -1,173 +1,179 @@
 # InventoryEngine
 
-InventoryEngine is a backend-style Java project focused on practicing core backend engineering concepts such as com.inventory.engine.service-layer architecture, data consistency, and inventory management logic.
+Backend-style inventory management API built with Spring Boot.
 
-The system simulates a warehouse where products can be stored, reserved for orders, and tracked through stock records with atomic operations.
+InventoryEngine models products, warehouses, stock levels, and orders, with a focus on transactional consistency and atomic stock reservation under concurrency.
 
-![CI](https://github.com/MaksimLapushkin/InventoryEngine/actions/workflows/maven.yml/badge.svg)
+## What the project does
 
-Project evolution
+* manage products and warehouses
+* track stock by `(product, warehouse)`
+* create orders with multiple order lines
+* reserve stock for orders atomically
+* release reservations and cancel orders
+* expose the domain through a REST API
+* document the API with OpenAPI / Swagger UI
 
-Phase 1:
-Core Java implementation (in-memory repositories, service layer, atomic operations)
+## Why this project exists
 
-Phase 2:
-Spring Boot migration (REST API, JPA, database integration)
+This project is meant to practice backend engineering topics that matter in real systems:
 
----
+* layered architecture
+* DTO-based REST API design
+* validation and error handling
+* JPA / Hibernate persistence
+* PostgreSQL integration
+* transactional consistency
+* concurrency-safe stock reservation
+* testing across controller, integration, and concurrency scenarios
 
+## Key backend idea: atomic reservation
 
-## Features
+The main business rule in the project is that order reservation must be all-or-nothing.
 
-- Product management
-- Warehouse stock tracking
-- Order creation
-- Atomic stock reservation (no partial updates)
-- Prevention of inconsistent states
-- Service–Repository architecture
-- In-memory data storage
-- File report generation
-- Usage of Optional, Streams, and Collections
+Stock reservation is enforced at the database level with conditional updates instead of a naive read-check-write flow. This prevents overselling when concurrent requests try to reserve the same stock.
 
----
+For multi-line orders, reservation is executed inside a transaction. If one line cannot be reserved, the whole operation rolls back and no partial reservation remains.
 
-## Architecture
+## API overview
 
-The project follows a layered backend structure:
+Main resource groups:
 
-com.inventory.engine.model → domain entities  
-com.inventory.engine.repository → data access layer (in-memory)  
-com.inventory.engine.service → business logic  
-com.inventory.engine.util → reporting utilities  
-app → application entry point  
+* `Products`
+* `Warehouses`
+* `Stock`
+* `Orders`
 
-Example flow:
+Typical flow:
 
-Order → StockService → StockRepository → StockItem
+1. Create a product
+2. Create a warehouse
+3. Add stock to the warehouse
+4. Create an order
+5. Reserve the order against warehouse stock
+6. Inspect resulting order and stock state
 
----
+## Example endpoints
 
-## Project Structure
+### Products
 
-src/main/java
+* `GET /api/products`
+* `GET /api/products/{id}`
+* `POST /api/products`
 
-com.inventory.engine.model/
-Product  
-Order  
-OrderLine  
-OrderStatus  
-StockItem  
-StockKey  
-Warehouse  
+### Warehouses
 
-com.inventory.engine.repository/
-ProductRepository  
-StockRepository  
-InMemoryProductRepository  
-InMemoryStockRepository  
+* `GET /api/warehouses`
+* `GET /api/warehouses/{id}`
+* `POST /api/warehouses`
+* `DELETE /api/warehouses/{id}`
 
-com.inventory.engine.service/
-ProductService  
-StockService  
+### Stock
 
-com.inventory.engine.util/
-InventoryReportService  
+* `GET /api/stocks`
+* `POST /api/stocks/add`
+* `POST /api/stocks/reserve`
+* `POST /api/stocks/release`
 
-com.inventory.engine.InventoryEngineApplication.java
+### Orders
 
----
+* `GET /api/orders`
+* `GET /api/orders/{orderId}`
+* `POST /api/orders`
+* `POST /api/orders/{orderId}/reserve`
+* `POST /api/orders/{orderId}/cancel`
 
-## Example Scenario
+## Tech stack
 
-1. Products are created  
-2. Stock is added to a warehouse  
-3. An order is created with multiple items  
-4. The system checks stock availability  
-5. If all items are available → reservation happens atomically  
+* Java 21
+* Spring Boot
+* Spring Web
+* Spring Data JPA
+* Bean Validation
+* PostgreSQL
+* H2 for tests
+* Maven
+* OpenAPI / Swagger UI
+* Docker + Docker Compose
 
-This guarantees:
-- No partial reservations  
-- Consistent stock state  
+## Project structure
 
----
+```text
+src/main/java/com/inventory/engine
+├── config        # application / OpenAPI config
+├── controller    # REST controllers
+├── dto           # request / response models
+├── exception     # domain and API exceptions
+├── mapper        # DTO mappers
+├── model         # domain entities
+├── repository    # JPA repositories
+└── service       # business logic
+```
 
-## Example Output
+## Running locally
 
-Order status: RESERVED
+### 1. Start PostgreSQL with Docker Compose
 
-Product 1 available=18 reserved=2  
-Product 2 available=15 reserved=0  
-Product 3 available=27 reserved=3  
+```bash
+docker compose up -d
+```
 
----
+### 2. Run the application
+
+```bash
+mvn spring-boot:run
+```
+
+Or build and run the jar:
+
+```bash
+mvn clean package
+java -jar target/inventory-engine-0.1.0.jar
+```
+
+## API documentation
+
+After the application starts, open:
+
+* `http://localhost:8080/swagger-ui.html`
+* `http://localhost:8080/v3/api-docs`
 
 ## Testing
 
-The project includes unit tests for core business logic:
+The project includes several layers of tests:
 
-- Stock reservation
-- Stock release
-- Edge cases (not enough stock, missing stock)
-- Data consistency validation
+* controller tests for the HTTP layer
+* integration tests for the REST API
+* business logic tests for stock and orders
+* concurrency-focused tests for competing reservations
+* PostgreSQL-backed tests via Testcontainers
 
-JUnit 5 + AssertJ
+Example scenarios covered:
 
----
+* invalid request validation
+* successful create / reserve flows
+* rollback of multi-line order reservation on failure
+* two concurrent requests trying to reserve the same stock
+* prevention of oversell under concurrent load
 
-## CI (GitHub Actions)
+## Notes
 
-Runs on every push  
-Builds project with Maven  
-Executes tests automatically  
+This repository contains the current Spring Boot + JPA implementation.
 
----
+Older in-memory repository code is not part of the active implementation anymore. If legacy code exists in history or a separate branch, it is retained only as project evolution, not as the current runtime path.
 
-## Docker
+## Possible next improvements
 
-docker build -t inventory-engine .  
-docker run inventory-engine  
+* Flyway database migrations
+* pagination / filtering improvements
+* richer API error documentation
+* authentication / authorization
+* metrics / observability
+* Kafka-based integration events
 
----
+## Author
 
-## How to run
+Maksim Lapushkin
 
-mvn clean package  
-java -jar target/InventoryEngine-1.0-SNAPSHOT.jar  
-
----
-
-## Technologies
-
-- Java 21
-- Maven
-- JUnit 5
-- AssertJ
-- Java Collections
-- Stream API
-- Optional
-- File I/O
-- Basic concurrency reasoning
-
----
-
-## Purpose
-
-This project was created to practice:
-
-- Backend architecture design
-- Service-layer logic
-- Atomic operations and data consistency
-- Clean code and structure
-- Test-driven thinking
-
----
-
-## Future Improvements
-
-- REST API with Spring Boot
-- PostgreSQL + JPA/Hibernate
-- DTO layer
-- Validation
-- Transaction management
-- Integration testing
-- Docker Compose setup
+```
+```
