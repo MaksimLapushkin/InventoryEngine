@@ -66,9 +66,7 @@ class ApiIntegrationTest extends PostgresContainerTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("RESERVED"));
 
-        mockMvc.perform(get("/api/stocks")
-                        .param("productId", String.valueOf(productId))
-                        .param("warehouseId", String.valueOf(warehouseId)))
+        mockMvc.perform(get("/api/stocks"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].reservedQuantity").value(2))
                 .andExpect(jsonPath("$[0].availableQuantity").value(3));

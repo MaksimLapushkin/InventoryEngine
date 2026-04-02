@@ -39,6 +39,10 @@ class StockReservationTransactionalTest extends PostgresContainerTestBase {
 
     @Test
     void shouldRollbackOrderReservationWhenLineFails() {
+        if (!POSTGRES.isRunning()) {
+            POSTGRES.start();
+        }
+
         var product1 = productService.addProduct("SKU-" + UUID.randomUUID(), "Product 1", Unit.PIECE);
         var product2 = productService.addProduct("SKU-" + UUID.randomUUID(), "Product 2", Unit.PIECE);
         var warehouse = warehouseService.create("Main " + UUID.randomUUID());

@@ -10,9 +10,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface StockRepository extends JpaRepository<StockItem, StockKey> {
-    List<StockItem> findByProductId(Long productId);
-    List<StockItem> findByWarehouseId(Long warehouseId);
-    List<StockItem> findByProductIdAndWarehouseId(Long productId, Long warehouseId);
+    List<StockItem> findByIdProductId(Long productId);
+    List<StockItem> findByIdWarehouseId(Long warehouseId);
+    List<StockItem> findByIdProductIdAndIdWarehouseId(Long productId, Long warehouseId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

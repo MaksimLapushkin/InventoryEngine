@@ -97,11 +97,11 @@ public class StockService {
     public List<StockResponse> getStocks(Long productId, Long warehouseId) {
         List<StockItem> items;
         if (productId != null && warehouseId != null) {
-            items = repository.findByProductIdAndWarehouseId(productId, warehouseId);
+            items = repository.findByIdProductIdAndIdWarehouseId(productId, warehouseId);
         } else if (productId != null) {
-            items = repository.findByProductId(productId);
+            items = repository.findByIdProductId(productId);
         } else if (warehouseId != null) {
-            items = repository.findByWarehouseId(warehouseId);
+            items = repository.findByIdWarehouseId(warehouseId);
         } else {
             items = repository.findAll();
         }
