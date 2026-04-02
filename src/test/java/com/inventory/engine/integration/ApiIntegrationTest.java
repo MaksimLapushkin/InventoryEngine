@@ -62,13 +62,13 @@ class ApiIntegrationTest extends PostgresContainerTestBase {
         long orderId = orderIdValue.longValue();
 
         mockMvc.perform(post("/api/orders/" + orderId + "/reserve")
-                        .param("warehouseId", warehouseId.toString()))
+                        .param("warehouseId", String.valueOf(warehouseId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("RESERVED"));
 
         mockMvc.perform(get("/api/stocks")
-                        .param("productId", productId.toString())
-                        .param("warehouseId", warehouseId.toString()))
+                        .param("productId", String.valueOf(productId))
+                        .param("warehouseId", String.valueOf(warehouseId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].reservedQuantity").value(2))
                 .andExpect(jsonPath("$[0].availableQuantity").value(3));
