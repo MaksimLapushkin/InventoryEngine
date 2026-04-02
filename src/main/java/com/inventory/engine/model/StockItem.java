@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,9 @@ public class StockItem {
 
     @Column(nullable = false)
     private int reserved;
+
+    @Version
+    private long version;
 
     public StockItem(Long productId, Long warehouseId, int available, int reserved) {
         if (productId == null) {

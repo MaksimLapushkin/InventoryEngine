@@ -1,5 +1,6 @@
 package com.inventory.engine.service;
 
+import com.inventory.engine.exception.NotEnoughStockException;
 import com.inventory.engine.exception.StockNotFoundException;
 import com.inventory.engine.model.StockItem;
 import com.inventory.engine.model.StockKey;
@@ -75,8 +76,7 @@ class StockServiceTest {
             stockService.addStock(0L, 0L, 1);
 
             assertThatThrownBy(() -> stockService.reserveStock(0L, 0L, 2))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("not enough items available");
+                    .isInstanceOf(NotEnoughStockException.class);
         }
     }
 

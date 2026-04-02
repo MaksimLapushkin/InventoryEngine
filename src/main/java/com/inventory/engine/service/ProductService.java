@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -36,18 +35,14 @@ public class ProductService {
     }
 
     public List<Product> findProductsByUnit(Unit unit){
-        return  repository.findAll().stream()
-                .filter(product -> product.getUnit()==unit)
-                .collect(Collectors.toList());
+        return repository.findByUnit(unit);
     }
 
     public List<Product> findProductsByName(String name){
         if (name==null || name.isBlank()){
             throw new IllegalArgumentException("empty name");
         }
-        return repository.findAll().stream()
-                .filter(product -> product.getName().toLowerCase().contains(name.toLowerCase()))
-                .toList();
+        return repository.findByNameContainingIgnoreCase(name);
 
     }
 

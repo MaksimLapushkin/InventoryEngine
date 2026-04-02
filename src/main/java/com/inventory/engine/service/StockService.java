@@ -4,9 +4,11 @@ import com.inventory.engine.exception.NotEnoughStockException;
 import com.inventory.engine.exception.StockNotFoundException;
 import com.inventory.engine.model.*;
 import com.inventory.engine.repository.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -20,34 +22,45 @@ public class StockService {
 
     @Transactional
     public void addStock(Long productId, Long warehouseId, int qty) {
-        StockKey key = new StockKey(productId,warehouseId);
+        validateQty(qty);
 
-        StockItem stockItem = repository
-                .findById(key)
-                .orElseGet(() -> new StockItem(productId, warehouseId, 0, 0));
-        stockItem.addStock(qty);
-        repository.save(stockItem);
+        int updated = repository.increaseAvailable(productId, warehouseId, qty);
+        if (updated == 0) {
+            StockItem stockItem = new StockItem(productId, warehouseId, 0, 0);
+            stockItem.addStock(qty);
+            try {
+                repository.save(stockItem);
+            } catch (DataIntegrityViolationException ex) {
+                repository.increaseAvailable(productId, warehouseId, qty);
+            }
+        }
     }
 
     @Transactional
     public void reserveStock(Long productId, Long warehouseId, int qty) {
+        validateQty(qty);
         StockKey key = new StockKey(productId,warehouseId);
 
-        StockItem stockItem = repository
-                .findById(key)
-                .orElseThrow(() -> new StockNotFoundException(productId, warehouseId));
-        stockItem.reserve(qty);
-        repository.save(stockItem);
+        int updated = repository.reserveStock(productId, warehouseId, qty);
+        if (updated == 0) {
+            if (repository.existsById(key)) {
+                throw new NotEnoughStockException(productId, warehouseId);
+            }
+            throw new StockNotFoundException(productId, warehouseId);
+        }
     }
 
     @Transactional
     public void releaseStock(Long productId, Long warehouseId, int qty) {
+        validateQty(qty);
         StockKey key = new StockKey(productId,warehouseId);
-        StockItem stockItem = repository
-                .findById(key)
-                .orElseThrow(() -> new StockNotFoundException(productId, warehouseId));
-        stockItem.releaseReservation(qty);
-        repository.save(stockItem);
+        int updated = repository.releaseStock(productId, warehouseId, qty);
+        if (updated == 0) {
+            if (repository.existsById(key)) {
+                throw new IllegalStateException("cannot release more items than reserved");
+            }
+            throw new StockNotFoundException(productId, warehouseId);
+        }
     }
 
     @Transactional
@@ -70,25 +83,9 @@ public class StockService {
 
     @Transactional
     public void reserveOrderAtomically(Long warehouseId, Order order) {
-
-        List<OrderLine> items = order.getItems();
-
-        // validation
-
-        for (OrderLine line : items) {
-
-            StockKey key = new StockKey(line.getProductId(), warehouseId);
-
-            StockItem stockItem = repository
-                    .findById(key)
-                    .orElseThrow(() -> new StockNotFoundException(line.getProductId(), warehouseId));
-
-            if (stockItem.getAvailable() < line.getQuantity()) {
-                throw new NotEnoughStockException(line.getProductId(), warehouseId);
-            }
-        }
-
-        // commit
+        List<OrderLine> items = order.getItems().stream()
+                .sorted(Comparator.comparing(OrderLine::getProductId))
+                .toList();
 
         for (OrderLine line : items) {
             reserveStock(line.getProductId(), warehouseId, line.getQuantity());
@@ -98,9 +95,18 @@ public class StockService {
     }
 
     public List<StockResponse> getStocks(Long productId, Long warehouseId) {
-        return repository.findAll().stream()
-                .filter(stockItem -> productId == null || stockItem.getProductId().equals(productId))
-                .filter(stockItem -> warehouseId == null || stockItem.getWarehouseId().equals(warehouseId))
+        List<StockItem> items;
+        if (productId != null && warehouseId != null) {
+            items = repository.findByProductIdAndWarehouseId(productId, warehouseId);
+        } else if (productId != null) {
+            items = repository.findByProductId(productId);
+        } else if (warehouseId != null) {
+            items = repository.findByWarehouseId(warehouseId);
+        } else {
+            items = repository.findAll();
+        }
+
+        return items.stream()
                 .map(stockItem -> new StockResponse(
                         stockItem.getProductId(),
                         stockItem.getWarehouseId(),
@@ -111,4 +117,9 @@ public class StockService {
                 .toList();
     }
 
+    private void validateQty(int qty) {
+        if (qty <= 0) {
+            throw new IllegalArgumentException("qty must be positive");
+        }
+    }
 }
