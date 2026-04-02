@@ -175,5 +175,3 @@ Older in-memory repository code is not part of the active implementation anymore
 
 Maksim Lapushkin
 
-```
-```
