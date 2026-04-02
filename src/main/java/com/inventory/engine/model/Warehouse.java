@@ -17,6 +17,9 @@ public class Warehouse {
     }
 
     public Warehouse(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("empty name");
+        }
         this.name = name;
     }
 

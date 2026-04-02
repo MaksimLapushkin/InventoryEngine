@@ -2,13 +2,16 @@ package com.inventory.engine.controller;
 
 import com.inventory.engine.dto.CreateWarehouseRequest;
 import com.inventory.engine.dto.WarehouseResponse;
+import com.inventory.engine.mapper.WarehouseMapper;
 import com.inventory.engine.model.Warehouse;
 import com.inventory.engine.service.WarehouseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -21,22 +24,26 @@ public class WarehouseController {
     @PostMapping
     public ResponseEntity<WarehouseResponse> create(@Valid @RequestBody CreateWarehouseRequest request) {
         Warehouse warehouse = warehouseService.create(request.getName());
-        return ResponseEntity.ok(map(warehouse));
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(warehouse.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(WarehouseMapper.toResponse(warehouse));
     }
 
     @GetMapping
     public List<WarehouseResponse> getAll() {
-        return warehouseService.getAll().stream()
-                .map(this::map)
-                .toList();
+        return WarehouseMapper.toResponseList(warehouseService.getAll());
     }
 
     @GetMapping("/{id}")
     public WarehouseResponse getById(@PathVariable Long id) {
-        return map(warehouseService.getById(id));
+        return WarehouseMapper.toResponse(warehouseService.getById(id));
     }
 
-    private WarehouseResponse map(Warehouse w) {
-        return new WarehouseResponse(w.getId(), w.getName());
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        warehouseService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -24,6 +24,15 @@ public class Product {
     }
 
     public Product(String sku, String name, Unit unit) {
+        if (sku == null || sku.isBlank()) {
+            throw new IllegalArgumentException("empty sku");
+        }
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("empty name");
+        }
+        if (unit == null) {
+            throw new IllegalArgumentException("unit cannot be null");
+        }
         this.sku = sku;
         this.name = name;
         this.unit = unit;

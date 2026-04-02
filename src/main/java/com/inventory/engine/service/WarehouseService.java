@@ -17,9 +17,6 @@ public class WarehouseService {
 
     @Transactional
     public Warehouse create(String name) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("empty name");
-        }
         return repository.save(new Warehouse(name));
     }
 
@@ -27,13 +24,16 @@ public class WarehouseService {
         return repository.findAll();
     }
 
-    public Warehouse getWarehouse(Long id) {
+    public Warehouse getById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new WarehouseNotFoundException(id));
     }
 
-    public Warehouse getById(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new WarehouseNotFoundException(id));
+    @Transactional
+    public void delete(Long id) {
+        if (!repository.existsById(id)) {
+            throw new WarehouseNotFoundException(id);
+        }
+        repository.deleteById(id);
     }
 }

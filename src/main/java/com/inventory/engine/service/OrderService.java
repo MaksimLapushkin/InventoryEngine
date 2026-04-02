@@ -1,9 +1,9 @@
 package com.inventory.engine.service;
 
 import com.inventory.engine.dto.CreateOrderRequest;
-import com.inventory.engine.dto.OrderLineResponse;
 import com.inventory.engine.dto.OrderResponse;
 import com.inventory.engine.exception.OrderNotFoundException;
+import com.inventory.engine.mapper.OrderMapper;
 import com.inventory.engine.model.Order;
 import com.inventory.engine.model.OrderLine;
 import com.inventory.engine.repository.OrderRepository;
@@ -31,14 +31,18 @@ public class OrderService {
 
         Order order = new Order(lines);
 
-        return toResponse(repository.save(order));
+        return OrderMapper.toResponse(repository.save(order));
     }
 
     public OrderResponse findById(Long orderId) {
         Order order = repository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
 
-        return toResponse(order);
+        return OrderMapper.toResponse(order);
+    }
+
+    public List<OrderResponse> listOrders() {
+        return OrderMapper.toResponseList(repository.findAll());
     }
 
     @Transactional
@@ -49,16 +53,17 @@ public class OrderService {
         stockService.reserveOrderAtomically(warehouseId, order);
         repository.save(order);
 
-        return toResponse(order);
+        return OrderMapper.toResponse(order);
     }
 
-    private OrderResponse toResponse(Order order) {
-        return new OrderResponse(
-                order.getId(),
-                order.getItems().stream()
-                        .map(i -> new OrderLineResponse(i.getProductId(), i.getQuantity()))
-                        .toList(),
-                order.getStatus().name()
-        );
+    @Transactional
+    public OrderResponse cancel(Long orderId, Long warehouseId) {
+        Order order = repository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        stockService.releaseOrderReservation(warehouseId, order);
+        repository.save(order);
+
+        return OrderMapper.toResponse(order);
     }
 }
