@@ -3,6 +3,8 @@ package com.inventory.engine.service;
 import com.inventory.engine.exception.ProductNotFoundException;
 import com.inventory.engine.model.Product;
 import com.inventory.engine.model.Unit;
+import com.inventory.engine.repository.ProductRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,14 @@ class ProductServiceTest {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @BeforeEach
+    void clean() {
+        productRepository.deleteAll();
+    }
 
     @Nested
     @DisplayName("addProduct()")
