@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,25 +36,30 @@ class ProductServiceTest {
         productRepository.deleteAll();
     }
 
+    private String randomSku() {
+        return "SKU-" + UUID.randomUUID();
+    }
+
     @Nested
     @DisplayName("addProduct()")
     class AddProductTests {
 
         @Test
         void shouldAddProductSuccessfully() {
-            Product product = productService.addProduct("SKU-1", "Milk", Unit.PIECE);
+            String sku = randomSku();
+            Product product = productService.addProduct(sku, "Milk", Unit.PIECE);
 
             assertThat(product).isNotNull();
             assertThat(product.getId()).isNotNull();
-            assertThat(product.getSku()).isEqualTo("SKU-1");
+            assertThat(product.getSku()).isEqualTo(sku);
             assertThat(product.getName()).isEqualTo("Milk");
             assertThat(product.getUnit()).isEqualTo(Unit.PIECE);
         }
 
         @Test
-        void shouldAssignIncreasingIdsToNewProducts(){
-            productService.addProduct("SKU-1", "Milk", Unit.LITER);
-            productService.addProduct("SKU-2", "Bread", Unit.PIECE);
+        void shouldAssignIncreasingIdsToNewProducts() {
+            productService.addProduct(randomSku(), "Milk", Unit.LITER);
+            productService.addProduct(randomSku(), "Bread", Unit.PIECE);
 
             List<Product> result = productService.listProducts();
 
@@ -68,20 +74,21 @@ class ProductServiceTest {
 
         @Test
         void shouldReturnProductWhenIdExists() {
-            Product created = productService.addProduct("SKU-1", "Milk", Unit.LITER);
+            String sku = randomSku();
+            Product created = productService.addProduct(sku, "Milk", Unit.LITER);
 
             Product found = productService.getProduct(created.getId());
 
             assertThat(found).isNotNull();
             assertThat(found.getId()).isEqualTo(created.getId());
-            assertThat(found.getSku()).isEqualTo("SKU-1");
+            assertThat(found.getSku()).isEqualTo(sku);
             assertThat(found.getName()).isEqualTo("Milk");
             assertThat(found.getUnit()).isEqualTo(Unit.LITER);
         }
 
         @Test
         void shouldThrowExceptionWhenProductNotFound() {
-            assertThatThrownBy(() -> productService.getProduct(999L))
+            assertThatThrownBy(() -> productService.getProduct(999_999L))
                     .isInstanceOf(ProductNotFoundException.class);
         }
     }
@@ -92,8 +99,8 @@ class ProductServiceTest {
 
         @Test
         void shouldReturnAllProducts() {
-            productService.addProduct("SKU-1", "Milk", Unit.LITER);
-            productService.addProduct("SKU-2", "Water", Unit.LITER);
+            productService.addProduct(randomSku(), "Milk", Unit.LITER);
+            productService.addProduct(randomSku(), "Water", Unit.LITER);
 
             List<Product> result = productService.listProducts();
 
@@ -104,12 +111,11 @@ class ProductServiceTest {
         }
 
         @Test
-        void shouldReturnEmptyListWhenNoProductsExist(){
+        void shouldReturnEmptyListWhenNoProductsExist() {
             List<Product> result = productService.listProducts();
 
             assertThat(result).isEmpty();
         }
-
     }
 
     @Nested
@@ -118,9 +124,9 @@ class ProductServiceTest {
 
         @Test
         void shouldReturnOnlyProductsWithRequestedUnit() {
-            productService.addProduct("SKU-1", "Nut bar", Unit.PIECE);
-            productService.addProduct("SKU-2", "Water", Unit.LITER);
-            productService.addProduct("SKU-3", "Bread", Unit.PIECE);
+            productService.addProduct(randomSku(), "Nut bar", Unit.PIECE);
+            productService.addProduct(randomSku(), "Water", Unit.LITER);
+            productService.addProduct(randomSku(), "Bread", Unit.PIECE);
 
             List<Product> result = productService.findProductsByUnit(Unit.PIECE);
 
@@ -131,8 +137,8 @@ class ProductServiceTest {
         }
 
         @Test
-        void shouldReturnEmptyListWhenNoProductsMatchUnit(){
-            productService.addProduct("SKU-1", "Milk", Unit.LITER);
+        void shouldReturnEmptyListWhenNoProductsMatchUnit() {
+            productService.addProduct(randomSku(), "Milk", Unit.LITER);
 
             List<Product> result = productService.findProductsByUnit(Unit.PIECE);
 
@@ -146,9 +152,9 @@ class ProductServiceTest {
 
         @Test
         void shouldReturnMatchingProductsIgnoringCase() {
-            productService.addProduct("SKU-1", "Milk", Unit.LITER);
-            productService.addProduct("SKU-2", "Dark Milk Chocolate", Unit.PIECE);
-            productService.addProduct("SKU-3", "Bread", Unit.PIECE);
+            productService.addProduct(randomSku(), "Milk", Unit.LITER);
+            productService.addProduct(randomSku(), "Dark Milk Chocolate", Unit.PIECE);
+            productService.addProduct(randomSku(), "Bread", Unit.PIECE);
 
             List<Product> result = productService.findProductsByName("milk");
 
