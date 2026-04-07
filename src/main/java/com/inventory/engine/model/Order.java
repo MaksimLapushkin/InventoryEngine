@@ -17,6 +17,9 @@ public class Order {
     @Column(nullable = false)
     private OrderStatus status;
 
+    @Column(name = "warehouse_id")
+    private Long warehouseId;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderLine> items = new ArrayList<>();
 
@@ -24,7 +27,8 @@ public class Order {
     }
 
     public Order(List<OrderLine> items) {
-        this.status = OrderStatus.NEW;
+        this.status = OrderStatus.CREATED;
+        this.warehouseId = null;
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("order must contain at least one item");
         }
@@ -41,6 +45,10 @@ public class Order {
         return status;
     }
 
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
     public List<OrderLine> getItems() {
         return items;
     }
@@ -53,24 +61,43 @@ public class Order {
         items.add(item);
     }
 
-    public void reserve() {
-        if (getStatus() != OrderStatus.NEW) {
-            throw new IllegalArgumentException("wrong status");
+    public void reserve(Long warehouseId) {
+        if (status != OrderStatus.CREATED) {
+            throw new IllegalStateException("order must be in CREATED status to reserve");
+        }
+        if (warehouseId == null) {
+            throw new IllegalArgumentException("warehouseId cannot be null");
         }
         this.status = OrderStatus.RESERVED;
+        this.warehouseId = warehouseId;
     }
 
-    public void confirm() {
-        if (getStatus() != OrderStatus.RESERVED) {
-            throw new IllegalArgumentException("wrong status");
+    public void releaseReservation() {
+        if (status != OrderStatus.RESERVED) {
+            throw new IllegalStateException("order must be in RESERVED status to release reservation");
         }
-        this.status = OrderStatus.CONFIRMED;
+        if (warehouseId == null) {
+            throw new IllegalStateException("reserved order must have a reservation warehouse");
+        }
+        this.status = OrderStatus.CREATED;
+        this.warehouseId = null;
     }
 
     public void cancel() {
         if (status == OrderStatus.CANCELLED) {
             throw new IllegalStateException("order is already cancelled");
         }
+        if (status != OrderStatus.CREATED && status != OrderStatus.RESERVED) {
+            throw new IllegalStateException("order cannot be cancelled from status " + status);
+        }
         this.status = OrderStatus.CANCELLED;
+        this.warehouseId = null;
+    }
+
+    public void fail() {
+        if (status != OrderStatus.CREATED) {
+            throw new IllegalStateException("order can only fail from CREATED status");
+        }
+        this.status = OrderStatus.FAILED;
     }
 }

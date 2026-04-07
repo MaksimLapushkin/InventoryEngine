@@ -64,25 +64,24 @@ public class StockService {
     }
 
     @Transactional
-    public void reserveOrder(Long warehouseId, Order order){
-        List<OrderLine> items = order.getItems();
-        for (OrderLine line : items){
-            reserveStock(line.getProductId(), warehouseId, line.getQuantity());
-        }
-        order.reserve();
-    }
-
-    @Transactional
     public void releaseOrderReservation(Long warehouseId, Order order){
+        if (order.getStatus() != OrderStatus.RESERVED) {
+            throw new IllegalStateException("order must be in RESERVED status to release reservation");
+        }
+
         List<OrderLine> items = order.getItems();
         for (OrderLine line : items){
             releaseStock(line.getProductId(), warehouseId, line.getQuantity());
         }
-        order.cancel();
+        order.releaseReservation();
     }
 
     @Transactional
     public void reserveOrderAtomically(Long warehouseId, Order order) {
+        if (order.getStatus() != OrderStatus.CREATED) {
+            throw new IllegalStateException("order must be in CREATED status to reserve");
+        }
+
         List<OrderLine> items = order.getItems().stream()
                 .sorted(Comparator.comparing(OrderLine::getProductId))
                 .toList();
@@ -91,7 +90,7 @@ public class StockService {
             reserveStock(line.getProductId(), warehouseId, line.getQuantity());
         }
 
-        order.reserve();
+        order.reserve(warehouseId);
     }
 
     public List<StockResponse> getStocks(Long productId, Long warehouseId) {

@@ -14,6 +14,8 @@ public class OrderResponse {
     private Long id;
     @Schema(description = "Order lines")
     private List<OrderLineResponse> lines;
-    @Schema(description = "Order status", example = "NEW")
+    @Schema(description = "Order status", example = "CREATED")
     private String status;
+    @Schema(description = "Warehouse of the active reservation", example = "3", nullable = true)
+    private Long warehouseId;
 }

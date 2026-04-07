@@ -70,15 +70,26 @@ public class OrderController {
         return ResponseEntity.ok(orderService.reserve(orderId,warehouseId));
     }
 
+    @PostMapping("/{orderId}/release")
+    @Operation(summary = "Release order reservation")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Order reservation released"),
+            @ApiResponse(responseCode = "400", description = "Cannot release reservation"),
+            @ApiResponse(responseCode = "404", description = "Order or stock not found")
+    })
+    public ResponseEntity<OrderResponse> releaseReservation(
+            @PathVariable Long orderId) {
+        return ResponseEntity.ok(orderService.releaseReservation(orderId));
+    }
+
     @PostMapping("/{orderId}/cancel")
-    @Operation(summary = "Cancel order and release reservation")
+    @Operation(summary = "Cancel order")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Order cancelled"),
             @ApiResponse(responseCode = "400", description = "Cannot cancel order"),
             @ApiResponse(responseCode = "404", description = "Order or stock not found")
     })
-    public ResponseEntity<OrderResponse> cancel (
-            @PathVariable Long orderId, @RequestParam Long warehouseId){
-        return ResponseEntity.ok(orderService.cancel(orderId, warehouseId));
+    public ResponseEntity<OrderResponse> cancel (@PathVariable Long orderId){
+        return ResponseEntity.ok(orderService.cancel(orderId));
     }
 }

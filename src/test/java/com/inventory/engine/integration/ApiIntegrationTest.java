@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -56,6 +57,8 @@ class ApiIntegrationTest extends PostgresContainerTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderBody))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("CREATED"))
+                .andExpect(jsonPath("$.warehouseId").value(nullValue()))
                 .andReturn();
 
         Number orderIdValue = JsonPath.read(orderResult.getResponse().getContentAsString(), "$.id");
@@ -64,11 +67,22 @@ class ApiIntegrationTest extends PostgresContainerTestBase {
         mockMvc.perform(post("/api/orders/" + orderId + "/reserve")
                         .param("warehouseId", String.valueOf(warehouseId)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("RESERVED"));
+                .andExpect(jsonPath("$.status").value("RESERVED"))
+                .andExpect(jsonPath("$.warehouseId").value((int) warehouseId));
 
         mockMvc.perform(get("/api/stocks"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].reservedQuantity").value(2))
                 .andExpect(jsonPath("$[0].availableQuantity").value(3));
+
+        mockMvc.perform(post("/api/orders/" + orderId + "/release"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CREATED"))
+                .andExpect(jsonPath("$.warehouseId").value(nullValue()));
+
+        mockMvc.perform(post("/api/orders/" + orderId + "/cancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.warehouseId").value(nullValue()));
     }
 }

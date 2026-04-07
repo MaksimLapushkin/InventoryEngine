@@ -1,8 +1,8 @@
 package com.inventory.engine.model;
 
 public enum OrderStatus {
-    NEW,
+    CREATED,
     RESERVED,
-    CONFIRMED,
-    CANCELLED
+    CANCELLED,
+    FAILED
 }

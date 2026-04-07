@@ -66,6 +66,8 @@ class StockReservationTransactionalTest {
         assertThatThrownBy(() -> orderService.reserve(order.getId(), warehouseId))
                 .isInstanceOf(NotEnoughStockException.class);
 
+        assertThat(orderService.findById(order.getId()).getStatus()).isEqualTo("CREATED");
+
         StockItem product1Stock = stockRepository.findById(new StockKey(productId1, warehouseId)).orElseThrow();
         StockItem product2Stock = stockRepository.findById(new StockKey(productId2, warehouseId)).orElseThrow();
 

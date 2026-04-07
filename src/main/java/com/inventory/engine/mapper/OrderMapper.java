@@ -13,7 +13,8 @@ public class OrderMapper {
         return new OrderResponse(
                 order.getId(),
                 toLineResponses(order.getItems()),
-                order.getStatus().name()
+                order.getStatus().name(),
+                order.getWarehouseId()
         );
     }
 

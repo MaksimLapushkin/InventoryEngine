@@ -64,8 +64,13 @@ class StockReservationConcurrencyTest extends PostgresContainerTestBase {
 
         CreateOrderRequest orderRequest1 = orderRequest(202L, 4);
         CreateOrderRequest orderRequest2 = orderRequest(202L, 4);
-        Long orderId1 = orderService.createOrder(orderRequest1).getId();
-        Long orderId2 = orderService.createOrder(orderRequest2).getId();
+        var order1 = orderService.createOrder(orderRequest1);
+        var order2 = orderService.createOrder(orderRequest2);
+        Long orderId1 = order1.getId();
+        Long orderId2 = order2.getId();
+
+        assertThat(order1.getStatus()).isEqualTo("CREATED");
+        assertThat(order2.getStatus()).isEqualTo("CREATED");
 
         AtomicInteger success = new AtomicInteger();
         AtomicInteger failed = new AtomicInteger();
