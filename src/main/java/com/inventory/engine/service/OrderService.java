@@ -4,6 +4,9 @@ import com.inventory.engine.dto.CreateOrderRequest;
 import com.inventory.engine.dto.OrderResponse;
 import com.inventory.engine.exception.OrderNotFoundException;
 import com.inventory.engine.mapper.OrderMapper;
+import com.inventory.engine.messaging.OrderLifecycleEvent;
+import com.inventory.engine.messaging.OrderLifecycleEventPublisher;
+import com.inventory.engine.messaging.OrderLifecycleEventType;
 import com.inventory.engine.model.Order;
 import com.inventory.engine.model.OrderLine;
 import com.inventory.engine.model.OrderStatus;
@@ -11,6 +14,7 @@ import com.inventory.engine.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -18,10 +22,16 @@ public class OrderService {
 
     private final OrderRepository repository;
     private final StockService stockService;
+    private final OrderLifecycleEventPublisher orderLifecycleEventPublisher;
 
-    public OrderService(OrderRepository repository, StockService stockService) {
+    public OrderService(
+            OrderRepository repository,
+            StockService stockService,
+            OrderLifecycleEventPublisher orderLifecycleEventPublisher
+    ) {
         this.repository = repository;
         this.stockService = stockService;
+        this.orderLifecycleEventPublisher = orderLifecycleEventPublisher;
     }
 
     @Transactional
@@ -31,8 +41,10 @@ public class OrderService {
                 .toList();
 
         Order order = new Order(lines);
+        Order savedOrder = repository.save(order);
+        publishLifecycleEvent(savedOrder, OrderLifecycleEventType.ORDER_CREATED);
 
-        return OrderMapper.toResponse(repository.save(order));
+        return OrderMapper.toResponse(savedOrder);
     }
 
     @Transactional(readOnly = true)
@@ -54,9 +66,10 @@ public class OrderService {
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
 
         stockService.reserveOrderAtomically(warehouseId, order);
-        repository.save(order);
+        Order savedOrder = repository.save(order);
+        publishLifecycleEvent(savedOrder, OrderLifecycleEventType.ORDER_RESERVED);
 
-        return OrderMapper.toResponse(order);
+        return OrderMapper.toResponse(savedOrder);
     }
 
     @Transactional
@@ -66,9 +79,10 @@ public class OrderService {
 
         Long warehouseId = getReservationWarehouseId(order);
         stockService.releaseOrderReservation(warehouseId, order);
-        repository.save(order);
+        Order savedOrder = repository.save(order);
+        publishLifecycleEvent(savedOrder, OrderLifecycleEventType.ORDER_RELEASED);
 
-        return OrderMapper.toResponse(order);
+        return OrderMapper.toResponse(savedOrder);
     }
 
     @Transactional
@@ -82,9 +96,10 @@ public class OrderService {
         }
 
         order.cancel();
-        repository.save(order);
+        Order savedOrder = repository.save(order);
+        publishLifecycleEvent(savedOrder, OrderLifecycleEventType.ORDER_CANCELLED);
 
-        return OrderMapper.toResponse(order);
+        return OrderMapper.toResponse(savedOrder);
     }
 
     private Long getReservationWarehouseId(Order order) {
@@ -95,5 +110,22 @@ public class OrderService {
             throw new IllegalStateException("reserved order must have a reservation warehouse");
         }
         return order.getWarehouseId();
+    }
+
+    private void publishLifecycleEvent(Order order, OrderLifecycleEventType eventType) {
+        List<OrderLifecycleEvent.Line> lines = order.getItems().stream()
+                .map(line -> new OrderLifecycleEvent.Line(line.getProductId(), line.getQuantity()))
+                .toList();
+
+        OrderLifecycleEvent event = new OrderLifecycleEvent(
+                eventType,
+                order.getId(),
+                order.getStatus().name(),
+                order.getWarehouseId(),
+                Instant.now(),
+                lines
+        );
+
+        orderLifecycleEventPublisher.publish(event);
     }
 }
