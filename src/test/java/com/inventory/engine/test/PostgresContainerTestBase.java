@@ -24,5 +24,6 @@ public abstract class PostgresContainerTestBase {
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
         registry.add("spring.jpa.show-sql", () -> "false");
         registry.add("spring.jpa.properties.hibernate.format_sql", () -> "false");
+        registry.add("app.kafka.order-lifecycle.enabled", () -> "false");
     }
 }
