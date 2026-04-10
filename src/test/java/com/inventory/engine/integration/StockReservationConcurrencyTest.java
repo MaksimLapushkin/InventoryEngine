@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -75,19 +77,26 @@ class StockReservationConcurrencyTest extends PostgresContainerTestBase {
         AtomicInteger success = new AtomicInteger();
         AtomicInteger failed = new AtomicInteger();
         AtomicInteger index = new AtomicInteger();
+        Queue<Throwable> failures = new ConcurrentLinkedQueue<>();
 
         runConcurrent(2, () -> {
             Long orderId = index.getAndIncrement() == 0 ? orderId1 : orderId2;
             try {
                 orderService.reserve(orderId, 1L);
                 success.incrementAndGet();
-            } catch (NotEnoughStockException ex) {
+            } catch (Exception ex) {
+                failures.add(ex);
                 failed.incrementAndGet();
             }
         });
 
         assertThat(success.get()).isEqualTo(1);
-        assertThat(failed.get()).isEqualTo(1);
+        assertThat(failed.get())
+                .as("Captured concurrent reservation failures: %s", failures)
+                .isEqualTo(1);
+        assertThat(failures)
+                .as("Captured concurrent reservation failures")
+                .hasSize(1);
 
         StockItem result = stockRepository.findById(new StockKey(202L, 1L)).orElseThrow();
         assertThat(result.getReserved()).isEqualTo(4);
@@ -109,23 +118,36 @@ class StockReservationConcurrencyTest extends PostgresContainerTestBase {
         CountDownLatch start = new CountDownLatch(1);
         CountDownLatch done = new CountDownLatch(threads);
 
-        for (int i = 0; i < threads; i++) {
-            executor.execute(() -> {
-                ready.countDown();
-                try {
-                    start.await(5, TimeUnit.SECONDS);
-                    action.run();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } finally {
-                    done.countDown();
-                }
-            });
-        }
+        try {
+            for (int i = 0; i < threads; i++) {
+                executor.execute(() -> {
+                    ready.countDown();
+                    try {
+                        start.await(5, TimeUnit.SECONDS);
+                        action.run();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        done.countDown();
+                    }
+                });
+            }
 
-        ready.await(5, TimeUnit.SECONDS);
-        start.countDown();
-        done.await(10, TimeUnit.SECONDS);
-        executor.shutdownNow();
+            assertThat(ready.await(5, TimeUnit.SECONDS))
+                    .as("All worker threads should be ready before starting")
+                    .isTrue();
+            start.countDown();
+            assertThat(done.await(10, TimeUnit.SECONDS))
+                    .as("All worker threads should finish in time")
+                    .isTrue();
+        } finally {
+            executor.shutdown();
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+                assertThat(executor.awaitTermination(5, TimeUnit.SECONDS))
+                        .as("Executor should terminate after forced shutdown")
+                        .isTrue();
+            }
+        }
     }
 }
