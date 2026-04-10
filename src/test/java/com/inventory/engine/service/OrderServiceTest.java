@@ -6,6 +6,8 @@ import com.inventory.engine.exception.NotEnoughStockException;
 import com.inventory.engine.messaging.OrderLifecycleEvent;
 import com.inventory.engine.messaging.OrderLifecycleEventPublisher;
 import com.inventory.engine.messaging.OrderLifecycleEventType;
+import com.inventory.engine.messaging.OrderLifecyclePayload;
+import com.inventory.engine.messaging.OrderLinePayload;
 import com.inventory.engine.model.Order;
 import com.inventory.engine.model.OrderLine;
 import com.inventory.engine.repository.OrderRepository;
@@ -53,11 +55,13 @@ class OrderServiceTest {
         orderService.createOrder(createOrderRequest(7L, 2));
 
         OrderLifecycleEvent event = capturePublishedEvent();
-        assertThat(event.eventType()).isEqualTo(OrderLifecycleEventType.ORDER_CREATED);
-        assertThat(event.orderId()).isEqualTo(11L);
-        assertThat(event.status()).isEqualTo("CREATED");
-        assertThat(event.warehouseId()).isNull();
-        assertThat(event.lines()).containsExactly(new OrderLifecycleEvent.Line(7L, 2));
+        assertEnvelope(event, 11L, OrderLifecycleEventType.ORDER_CREATED);
+        assertThat(event.payload()).isEqualTo(new OrderLifecyclePayload(
+                11L,
+                "CREATED",
+                null,
+                List.of(new OrderLinePayload(7L, 2))
+        ));
     }
 
     @Test
@@ -73,11 +77,13 @@ class OrderServiceTest {
         orderService.reserve(12L, 3L);
 
         OrderLifecycleEvent event = capturePublishedEvent();
-        assertThat(event.eventType()).isEqualTo(OrderLifecycleEventType.ORDER_RESERVED);
-        assertThat(event.orderId()).isEqualTo(12L);
-        assertThat(event.status()).isEqualTo("RESERVED");
-        assertThat(event.warehouseId()).isEqualTo(3L);
-        assertThat(event.lines()).containsExactly(new OrderLifecycleEvent.Line(7L, 2));
+        assertEnvelope(event, 12L, OrderLifecycleEventType.ORDER_RESERVED);
+        assertThat(event.payload()).isEqualTo(new OrderLifecyclePayload(
+                12L,
+                "RESERVED",
+                3L,
+                List.of(new OrderLinePayload(7L, 2))
+        ));
     }
 
     @Test
@@ -94,11 +100,13 @@ class OrderServiceTest {
         orderService.releaseReservation(13L);
 
         OrderLifecycleEvent event = capturePublishedEvent();
-        assertThat(event.eventType()).isEqualTo(OrderLifecycleEventType.ORDER_RELEASED);
-        assertThat(event.orderId()).isEqualTo(13L);
-        assertThat(event.status()).isEqualTo("CREATED");
-        assertThat(event.warehouseId()).isNull();
-        assertThat(event.lines()).containsExactly(new OrderLifecycleEvent.Line(7L, 2));
+        assertEnvelope(event, 13L, OrderLifecycleEventType.ORDER_RELEASED);
+        assertThat(event.payload()).isEqualTo(new OrderLifecyclePayload(
+                13L,
+                "CREATED",
+                null,
+                List.of(new OrderLinePayload(7L, 2))
+        ));
     }
 
     @Test
@@ -110,10 +118,13 @@ class OrderServiceTest {
         orderService.cancel(14L);
 
         OrderLifecycleEvent event = capturePublishedEvent();
-        assertThat(event.eventType()).isEqualTo(OrderLifecycleEventType.ORDER_CANCELLED);
-        assertThat(event.orderId()).isEqualTo(14L);
-        assertThat(event.status()).isEqualTo("CANCELLED");
-        assertThat(event.warehouseId()).isNull();
+        assertEnvelope(event, 14L, OrderLifecycleEventType.ORDER_CANCELLED);
+        assertThat(event.payload()).isEqualTo(new OrderLifecyclePayload(
+                14L,
+                "CANCELLED",
+                null,
+                List.of(new OrderLinePayload(7L, 2))
+        ));
     }
 
     @Test
@@ -130,10 +141,13 @@ class OrderServiceTest {
         orderService.cancel(15L);
 
         OrderLifecycleEvent event = capturePublishedEvent();
-        assertThat(event.eventType()).isEqualTo(OrderLifecycleEventType.ORDER_CANCELLED);
-        assertThat(event.orderId()).isEqualTo(15L);
-        assertThat(event.status()).isEqualTo("CANCELLED");
-        assertThat(event.warehouseId()).isNull();
+        assertEnvelope(event, 15L, OrderLifecycleEventType.ORDER_CANCELLED);
+        assertThat(event.payload()).isEqualTo(new OrderLifecyclePayload(
+                15L,
+                "CANCELLED",
+                null,
+                List.of(new OrderLinePayload(7L, 2))
+        ));
         verify(orderLifecycleEventPublisher, times(1)).publish(any(OrderLifecycleEvent.class));
     }
 
@@ -168,6 +182,15 @@ class OrderServiceTest {
         ArgumentCaptor<OrderLifecycleEvent> eventCaptor = ArgumentCaptor.forClass(OrderLifecycleEvent.class);
         verify(orderLifecycleEventPublisher).publish(eventCaptor.capture());
         return eventCaptor.getValue();
+    }
+
+    private void assertEnvelope(OrderLifecycleEvent event, Long aggregateId, OrderLifecycleEventType eventType) {
+        assertThat(event.eventId()).isNotNull();
+        assertThat(event.aggregateId()).isEqualTo(aggregateId);
+        assertThat(event.correlationId()).isNotBlank();
+        assertThat(event.occurredAt()).isNotNull();
+        assertThat(event.eventType()).isEqualTo(eventType.name());
+        assertThat(event.eventTypeEnum()).isEqualTo(eventType);
     }
 
     private Order withId(Order order, Long id) {

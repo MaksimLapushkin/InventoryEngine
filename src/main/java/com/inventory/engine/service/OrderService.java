@@ -6,7 +6,9 @@ import com.inventory.engine.exception.OrderNotFoundException;
 import com.inventory.engine.mapper.OrderMapper;
 import com.inventory.engine.messaging.OrderLifecycleEvent;
 import com.inventory.engine.messaging.OrderLifecycleEventPublisher;
+import com.inventory.engine.messaging.OrderLifecyclePayload;
 import com.inventory.engine.messaging.OrderLifecycleEventType;
+import com.inventory.engine.messaging.OrderLinePayload;
 import com.inventory.engine.model.Order;
 import com.inventory.engine.model.OrderLine;
 import com.inventory.engine.model.OrderStatus;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class OrderService {
@@ -113,17 +116,24 @@ public class OrderService {
     }
 
     private void publishLifecycleEvent(Order order, OrderLifecycleEventType eventType) {
-        List<OrderLifecycleEvent.Line> lines = order.getItems().stream()
-                .map(line -> new OrderLifecycleEvent.Line(line.getProductId(), line.getQuantity()))
+        List<OrderLinePayload> lines = order.getItems().stream()
+                .map(line -> new OrderLinePayload(line.getProductId(), line.getQuantity()))
                 .toList();
 
-        OrderLifecycleEvent event = new OrderLifecycleEvent(
-                eventType,
+        OrderLifecyclePayload payload = new OrderLifecyclePayload(
                 order.getId(),
                 order.getStatus().name(),
                 order.getWarehouseId(),
-                Instant.now(),
                 lines
+        );
+
+        OrderLifecycleEvent event = new OrderLifecycleEvent(
+                UUID.randomUUID(),
+                order.getId(),
+                UUID.randomUUID().toString(),
+                Instant.now(),
+                eventType,
+                payload
         );
 
         orderLifecycleEventPublisher.publish(event);

@@ -24,6 +24,6 @@ public class KafkaOrderLifecycleEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onOrderLifecycleEvent(OrderLifecycleEvent event) {
-        kafkaTemplate.send(topic, event.orderId().toString(), event);
+        kafkaTemplate.send(topic, event.aggregateId().toString(), event);
     }
 }
