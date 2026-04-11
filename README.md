@@ -135,8 +135,10 @@ audit-projection-service (read-side / projection-side)
   +--> order_timeline
   +--> order_view
   +--> read-only REST API
-```InventoryEngine owns the transactional business logic and domain state.
+```
+InventoryEngine owns the transactional business logic and domain state.
 It persists domain changes and outbox records in the same transaction, then publishes lifecycle events to Kafka.
+
 ---
 
 ## Main entities
