@@ -111,23 +111,32 @@ InventoryEngine:
 ## Architecture overview
 
 ```text
-Client → InventoryEngine (command-side)
-               |
-               | transactional changes
-               v
-         PostgreSQL
-               |
-               | outbox_event
-               v
-        Outbox Publisher
-               |
-               v
-             Kafka
-               |
-               v
-audit-projection-service (read-side)
+Client
+  |
+  v
+InventoryEngine (write-side / command-side)
+  |
+  | 1. transactional domain changes
+  v
+PostgreSQL
+  |
+  | 2. outbox_event stored in the same transaction
+  v
+Outbox Publisher
+  |
+  | 3. publishes lifecycle events
+  v
+Kafka topic: order.lifecycle.v1
+  |
+  | 4. consumed asynchronously
+  v
+audit-projection-service (read-side / projection-side)
+  |
+  +--> order_timeline
+  +--> order_view
+  +--> read-only REST API
 ```
-
+InventoryEngine owns the transactional business logic and domain state. It persists domain changes and outbox records in the same transaction, then publishes lifecycle events to Kafka. The companion read-side service consumes those events and builds query-friendly audit projections.
 ---
 
 ## Main entities
