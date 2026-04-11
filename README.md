@@ -152,6 +152,22 @@ It persists domain changes and outbox records in the same transaction, then publ
 
 ---
 
+## API documentation
+
+Interactive API documentation is available via Swagger UI after local startup.
+
+### Swagger UI
+
+http://localhost:8080/swagger-ui/index.html
+
+Use Swagger to:
+
+- inspect request bodies  
+- explore response schemas  
+- understand endpoint structure and parameters  
+
+---
+
 ## API examples
 
 ### Create warehouse
