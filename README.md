@@ -2,7 +2,7 @@
 
 InventoryEngine is a Spring Boot backend service that manages products, warehouses, stock, and orders, with a focus on **atomic stock reservation** and **event-driven architecture**.
 
-The project is designed to demonstrate production-style backend concepts rather than simple CRUD logic.
+The project is designed to demonstrate production-style backend concepts.
 
 ---
 
