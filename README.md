@@ -1,177 +1,230 @@
 # InventoryEngine
 
-Backend-style inventory management API built with Spring Boot.
+InventoryEngine is a Spring Boot backend service that manages products, warehouses, stock, and orders, with a focus on **atomic stock reservation** and **event-driven architecture**.
 
-InventoryEngine models products, warehouses, stock levels, and orders, with a focus on transactional consistency and atomic stock reservation under concurrency.
+The project is designed to demonstrate production-style backend concepts rather than simple CRUD logic.
 
-## What the project does
+---
 
-* manage products and warehouses
-* track stock by `(product, warehouse)`
-* create orders with multiple order lines
-* reserve stock for orders atomically
-* release reservations and cancel orders
-* expose the domain through a REST API
-* document the API with OpenAPI / Swagger UI
+## Core responsibilities
 
-## Why this project exists
+The service handles:
 
-This project is meant to practice backend engineering topics that matter in real systems:
+- product management
+- warehouse management
+- stock tracking (available / reserved)
+- order creation
+- atomic stock reservation across multiple order lines
+- order cancellation and stock release
 
-* layered architecture
-* DTO-based REST API design
-* validation and error handling
-* JPA / Hibernate persistence
-* PostgreSQL integration
-* transactional consistency
-* concurrency-safe stock reservation
-* testing across controller, integration, and concurrency scenarios
+All critical operations are transactional and consistent.
 
-## Key backend idea: atomic reservation
+---
 
-The main business rule in the project is that order reservation must be all-or-nothing.
+## Key backend concepts demonstrated
 
-Stock reservation is enforced at the database level with conditional updates instead of a naive read-check-write flow. This prevents overselling when concurrent requests try to reserve the same stock.
+### 1. Atomic stock reservation
 
-For multi-line orders, reservation is executed inside a transaction. If one line cannot be reserved, the whole operation rolls back and no partial reservation remains.
+Orders may contain multiple lines.
 
-## API overview
+Reservation logic guarantees:
 
-Main resource groups:
+- either **all items are reserved**
+- or **nothing is reserved**
 
-* `Products`
-* `Warehouses`
-* `Stock`
-* `Orders`
+This is implemented using:
 
-Typical flow:
+- database-level conditional updates
+- transactional boundaries
+- deterministic processing order
 
-1. Create a product
-2. Create a warehouse
-3. Add stock to the warehouse
-4. Create an order
-5. Reserve the order against warehouse stock
-6. Inspect resulting order and stock state
+---
 
-## Example endpoints
+### 2. Concurrency handling
 
-### Products
+The system is designed to behave correctly under concurrent requests:
 
-* `GET /api/products`
-* `GET /api/products/{id}`
-* `POST /api/products`
+- prevents overselling
+- uses safe update patterns
+- applies optimistic locking where appropriate
 
-### Warehouses
+---
 
-* `GET /api/warehouses`
-* `GET /api/warehouses/{id}`
-* `POST /api/warehouses`
-* `DELETE /api/warehouses/{id}`
+### 3. Transactional outbox pattern
 
-### Stock
+The service uses an **outbox pattern** to reliably publish events to Kafka.
 
-* `GET /api/stocks`
-* `POST /api/stocks/add`
-* `POST /api/stocks/reserve`
-* `POST /api/stocks/release`
+**Problem:**
 
-### Orders
+> DB commit and Kafka publish are not atomic.
 
-* `GET /api/orders`
-* `GET /api/orders/{orderId}`
-* `POST /api/orders`
-* `POST /api/orders/{orderId}/reserve`
-* `POST /api/orders/{orderId}/cancel`
+**Solution:**
+
+- domain changes and event creation are stored in `outbox_event` in the same transaction
+- a scheduled publisher reads `NEW` events
+- sends them to Kafka
+- marks them as `PUBLISHED`
+
+This ensures:
+
+- no lost events
+- no inconsistent state between DB and Kafka
+
+---
+
+### 4. Event-driven architecture
+
+The service publishes order lifecycle events to Kafka topic:
+
+```text
+order.lifecycle.v1
+```
+
+Events include:
+
+- `ORDER_CREATED`
+- `ORDER_RESERVED`
+- `ORDER_RELEASED`
+- `ORDER_CANCELLED`
+
+These events are consumed by a separate service:
+
+👉 `audit-projection-service`
+
+---
+
+### 5. Separation of concerns (Command vs Read)
+
+The system is split into:
+
+- **InventoryEngine** → write-side / command-side  
+- **audit-projection-service** → read-side / projection  
+
+InventoryEngine:
+
+- owns transactional logic
+- modifies domain state
+- publishes events
+
+---
+
+## Architecture overview
+
+```text
+Client → InventoryEngine (command-side)
+               |
+               | transactional changes
+               v
+         PostgreSQL
+               |
+               | outbox_event
+               v
+        Outbox Publisher
+               |
+               v
+             Kafka
+               |
+               v
+audit-projection-service (read-side)
+```
+
+---
+
+## Main entities
+
+- Product
+- Warehouse
+- StockItem (composite key)
+- Order
+- OrderLine
+- OutboxEvent
+
+---
+
+## API examples
+
+### Create warehouse
+
+```http
+POST /api/warehouses
+```
+
+### Create product
+
+```http
+POST /api/products
+```
+
+### Add stock
+
+```http
+POST /api/stocks/add
+```
+
+### Create order
+
+```http
+POST /api/orders
+```
+
+### Reserve order
+
+```http
+POST /api/orders/{id}/reserve?warehouseId=1
+```
+
+---
+
+## Example flow
+
+1. Create warehouse  
+2. Create product  
+3. Add stock  
+4. Create order  
+5. Reserve order  
+
+**Result:**
+
+- stock is reserved atomically
+- lifecycle events are written to outbox
+- events are published to Kafka
+- projection service updates read model
+
+---
 
 ## Tech stack
 
-* Java 21
-* Spring Boot
-* Spring Web
-* Spring Data JPA
-* Bean Validation
-* PostgreSQL
-* H2 for tests
-* Maven
-* OpenAPI / Swagger UI
-* Docker + Docker Compose
+- Java 21
+- Spring Boot
+- Spring Data JPA
+- PostgreSQL
+- Flyway
+- Kafka
+- Maven
 
-## Project structure
+---
 
-```text
-src/main/java/com/inventory/engine
-├── config        # application / OpenAPI config
-├── controller    # REST controllers
-├── dto           # request / response models
-├── exception     # domain and API exceptions
-├── mapper        # DTO mappers
-├── model         # domain entities
-├── repository    # JPA repositories
-└── service       # business logic
-```
+## Why this project is relevant
 
-## Running locally
+This project demonstrates:
 
-### 1. Start PostgreSQL with Docker Compose
+- transactional consistency
+- concurrency-safe stock reservation
+- event-driven backend design
+- outbox pattern implementation
+- separation of command-side and read-side
 
-```bash
-docker compose up -d
-```
+It is designed to reflect real backend system behavior rather than simplified academic examples.
 
-### 2. Run the application
+---
 
-```bash
-mvn spring-boot:run
-```
+## Related service
 
-Or build and run the jar:
+- audit-projection-service  
+  consumes Kafka events and builds audit timeline and read model
 
-```bash
-mvn clean package
-java -jar target/inventory-engine-0.1.0.jar
-```
-
-## API documentation
-
-After the application starts, open:
-
-* `http://localhost:8080/swagger-ui.html`
-* `http://localhost:8080/v3/api-docs`
-
-## Testing
-
-The project includes several layers of tests:
-
-* controller tests for the HTTP layer
-* integration tests for the REST API
-* business logic tests for stock and orders
-* concurrency-focused tests for competing reservations
-* PostgreSQL-backed tests via Testcontainers
-
-Example scenarios covered:
-
-* invalid request validation
-* successful create / reserve flows
-* rollback of multi-line order reservation on failure
-* two concurrent requests trying to reserve the same stock
-* prevention of oversell under concurrent load
-
-## Notes
-
-This repository contains the current Spring Boot + JPA implementation.
-
-Older in-memory repository code is not part of the active implementation anymore. If legacy code exists in history or a separate branch, it is retained only as project evolution, not as the current runtime path.
-
-## Possible next improvements
-
-* Flyway database migrations
-* pagination / filtering improvements
-* richer API error documentation
-* authentication / authorization
-* metrics / observability
-* Kafka-based integration events
+---
 
 ## Author
 
 Maksim Lapushkin
-
