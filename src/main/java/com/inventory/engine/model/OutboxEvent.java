@@ -13,6 +13,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -56,6 +57,12 @@ public class OutboxEvent {
 
     @Column(name = "error_message", columnDefinition = "text")
     private String errorMessage;
+
+    @Column(name = "attempt_count", nullable = false)
+    private int attemptCount;
+
+    @Column(name = "next_attempt_at")
+    private Instant nextAttemptAt;
 
     protected OutboxEvent() {
     }
@@ -142,14 +149,36 @@ public class OutboxEvent {
         return errorMessage;
     }
 
-    public void markPublished() {
-        this.status = OutboxEventStatus.PUBLISHED;
-        this.publishedAt = Instant.now();
-        this.errorMessage = null;
+    public int getAttemptCount() {
+        return attemptCount;
     }
 
-    public void markFailed(String errorMessage) {
+    public Instant getNextAttemptAt() {
+        return nextAttemptAt;
+    }
+
+    public void markInProgress(Instant claimExpiresAt) {
+        this.status = OutboxEventStatus.IN_PROGRESS;
+        this.errorMessage = null;
+        this.nextAttemptAt = claimExpiresAt;
+    }
+
+    public boolean isInProgressClaim(Instant claimExpiresAt) {
+        return status == OutboxEventStatus.IN_PROGRESS
+                && Objects.equals(nextAttemptAt, claimExpiresAt);
+    }
+
+    public void markPublished(Instant publishedAt) {
+        this.status = OutboxEventStatus.PUBLISHED;
+        this.publishedAt = publishedAt;
+        this.errorMessage = null;
+        this.nextAttemptAt = null;
+    }
+
+    public void markFailed(String errorMessage, Instant nextAttemptAt) {
         this.status = OutboxEventStatus.FAILED;
+        this.attemptCount++;
         this.errorMessage = errorMessage;
+        this.nextAttemptAt = nextAttemptAt;
     }
 }

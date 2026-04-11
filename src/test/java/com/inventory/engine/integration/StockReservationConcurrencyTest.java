@@ -5,9 +5,12 @@ import com.inventory.engine.dto.CreateOrderRequest;
 import com.inventory.engine.exception.NotEnoughStockException;
 import com.inventory.engine.model.StockItem;
 import com.inventory.engine.model.StockKey;
+import com.inventory.engine.model.Unit;
 import com.inventory.engine.repository.StockRepository;
 import com.inventory.engine.service.OrderService;
+import com.inventory.engine.service.ProductService;
 import com.inventory.engine.service.StockService;
+import com.inventory.engine.service.WarehouseService;
 import com.inventory.engine.test.PostgresContainerTestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -36,16 +40,22 @@ class StockReservationConcurrencyTest extends PostgresContainerTestBase {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private ProductService productService;
+
+    @Autowired
+    private WarehouseService warehouseService;
+
     @Test
     void shouldAllowOnlyOneReservationForLastUnit() throws Exception {
-        stockService.addStock(201L, 1L, 1);
+        StockFixture stock = createStock(1);
 
         AtomicInteger success = new AtomicInteger();
         AtomicInteger failed = new AtomicInteger();
 
         runConcurrent(2, () -> {
             try {
-                stockService.reserveStock(201L, 1L, 1);
+                stockService.reserveStock(stock.productId(), stock.warehouseId(), 1);
                 success.incrementAndGet();
             } catch (NotEnoughStockException ex) {
                 failed.incrementAndGet();
@@ -55,17 +65,17 @@ class StockReservationConcurrencyTest extends PostgresContainerTestBase {
         assertThat(success.get()).isEqualTo(1);
         assertThat(failed.get()).isEqualTo(1);
 
-        StockItem result = stockRepository.findById(new StockKey(201L, 1L)).orElseThrow();
+        StockItem result = stockRepository.findById(new StockKey(stock.productId(), stock.warehouseId())).orElseThrow();
         assertThat(result.getAvailable()).isEqualTo(0);
         assertThat(result.getReserved()).isEqualTo(1);
     }
 
     @Test
     void shouldAllowOnlyOneOrderToReserveStock() throws Exception {
-        stockService.addStock(202L, 1L, 5);
+        StockFixture stock = createStock(5);
 
-        CreateOrderRequest orderRequest1 = orderRequest(202L, 4);
-        CreateOrderRequest orderRequest2 = orderRequest(202L, 4);
+        CreateOrderRequest orderRequest1 = orderRequest(stock.productId(), 4);
+        CreateOrderRequest orderRequest2 = orderRequest(stock.productId(), 4);
         var order1 = orderService.createOrder(orderRequest1);
         var order2 = orderService.createOrder(orderRequest2);
         Long orderId1 = order1.getId();
@@ -82,7 +92,7 @@ class StockReservationConcurrencyTest extends PostgresContainerTestBase {
         runConcurrent(2, () -> {
             Long orderId = index.getAndIncrement() == 0 ? orderId1 : orderId2;
             try {
-                orderService.reserve(orderId, 1L);
+                orderService.reserve(orderId, stock.warehouseId());
                 success.incrementAndGet();
             } catch (Exception ex) {
                 failures.add(ex);
@@ -98,9 +108,16 @@ class StockReservationConcurrencyTest extends PostgresContainerTestBase {
                 .as("Captured concurrent reservation failures")
                 .hasSize(1);
 
-        StockItem result = stockRepository.findById(new StockKey(202L, 1L)).orElseThrow();
+        StockItem result = stockRepository.findById(new StockKey(stock.productId(), stock.warehouseId())).orElseThrow();
         assertThat(result.getReserved()).isEqualTo(4);
         assertThat(result.getAvailable()).isEqualTo(1);
+    }
+
+    private StockFixture createStock(int quantity) {
+        var product = productService.addProduct("SKU-" + UUID.randomUUID(), "Concurrent product", Unit.PIECE);
+        var warehouse = warehouseService.create("WH-" + UUID.randomUUID());
+        stockService.addStock(product.getId(), warehouse.getId(), quantity);
+        return new StockFixture(product.getId(), warehouse.getId());
     }
 
     private CreateOrderRequest orderRequest(Long productId, int qty) {
@@ -149,5 +166,8 @@ class StockReservationConcurrencyTest extends PostgresContainerTestBase {
                         .isTrue();
             }
         }
+    }
+
+    private record StockFixture(Long productId, Long warehouseId) {
     }
 }

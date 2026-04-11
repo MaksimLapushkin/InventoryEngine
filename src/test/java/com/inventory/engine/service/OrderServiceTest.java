@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -152,6 +153,40 @@ class OrderServiceTest {
     }
 
     @Test
+    void shouldUseSameCorrelationIdForEventsInSameOrderLifecycle() {
+        List<Order> savedOrders = new ArrayList<>();
+        when(repository.save(any(Order.class))).thenAnswer(invocation -> {
+            Order order = withId(invocation.getArgument(0), 21L);
+            savedOrders.add(order);
+            return order;
+        });
+
+        orderService.createOrder(createOrderRequest(7L, 2));
+
+        Order createdOrder = savedOrders.getFirst();
+        when(repository.findById(21L)).thenReturn(Optional.of(createdOrder));
+        doAnswer(invocation -> {
+            invocation.<Order>getArgument(1).reserve(3L);
+            return null;
+        }).when(stockService).reserveOrderAtomically(eq(3L), eq(createdOrder));
+
+        orderService.reserve(21L, 3L);
+
+        ArgumentCaptor<OrderLifecycleEvent> eventCaptor = ArgumentCaptor.forClass(OrderLifecycleEvent.class);
+        verify(orderLifecycleEventPublisher, times(2)).publish(eventCaptor.capture());
+
+        assertThat(eventCaptor.getAllValues())
+                .extracting(OrderLifecycleEvent::correlationId)
+                .containsExactly("order-21", "order-21");
+        assertThat(eventCaptor.getAllValues())
+                .extracting(OrderLifecycleEvent::eventTypeEnum)
+                .containsExactly(
+                        OrderLifecycleEventType.ORDER_CREATED,
+                        OrderLifecycleEventType.ORDER_RESERVED
+                );
+    }
+
+    @Test
     void shouldNotPublishWhenReserveFails() {
         Order order = withId(new Order(List.of(new OrderLine(7L, 2))), 16L);
         when(repository.findById(16L)).thenReturn(Optional.of(order));
@@ -187,7 +222,7 @@ class OrderServiceTest {
     private void assertEnvelope(OrderLifecycleEvent event, Long aggregateId, OrderLifecycleEventType eventType) {
         assertThat(event.eventId()).isNotNull();
         assertThat(event.aggregateId()).isEqualTo(aggregateId);
-        assertThat(event.correlationId()).isNotBlank();
+        assertThat(event.correlationId()).isEqualTo("order-" + aggregateId);
         assertThat(event.occurredAt()).isNotNull();
         assertThat(event.eventType()).isEqualTo(eventType.name());
         assertThat(event.eventTypeEnum()).isEqualTo(eventType);

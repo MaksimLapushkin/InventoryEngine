@@ -130,12 +130,16 @@ public class OrderService {
         OrderLifecycleEvent event = new OrderLifecycleEvent(
                 UUID.randomUUID(),
                 order.getId(),
-                UUID.randomUUID().toString(),
+                correlationIdFor(order),
                 Instant.now(),
                 eventType,
                 payload
         );
 
         orderLifecycleEventPublisher.publish(event);
+    }
+
+    private String correlationIdFor(Order order) {
+        return "order-" + order.getId();
     }
 }
