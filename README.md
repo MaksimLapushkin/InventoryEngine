@@ -254,6 +254,10 @@ $stockAfter = Invoke-RestMethod `
 
 $stockAfter
 
+```
+
+
+---
 
 ## Example flow
 
