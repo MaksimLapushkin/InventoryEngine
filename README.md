@@ -187,13 +187,10 @@ A minimal end-to-end scenario:
 <summary>Copy-paste demo (PowerShell)</summary>
 
 ```powershell
-
 $base = "http://localhost:8080"
 
 # 1. Create warehouse
-$warehouseBody = @{
-  name = "Main Warehouse"
-} | ConvertTo-Json
+$warehouseBody = '{"name":"Main Warehouse"}'
 
 $warehouse = Invoke-RestMethod `
   -Method POST `
@@ -205,11 +202,7 @@ $warehouseId = $warehouse.id
 $warehouse | ConvertTo-Json -Depth 5
 
 # 2. Create product
-$productBody = @{
-  sku  = "SKU-001"
-  name = "Milk"
-  unit = "PIECE"
-} | ConvertTo-Json
+$productBody = '{"sku":"SKU-001","name":"Milk","unit":"PIECE"}'
 
 $product = Invoke-RestMethod `
   -Method POST `
@@ -221,11 +214,7 @@ $productId = $product.id
 $product | ConvertTo-Json -Depth 5
 
 # 3. Add stock
-$addStockBody = @{
-  productId   = $productId
-  warehouseId = $warehouseId
-  quantity    = 10
-} | ConvertTo-Json
+$addStockBody = "{`"productId`":$productId,`"warehouseId`":$warehouseId,`"quantity`":10}"
 
 Invoke-RestMethod `
   -Method POST `
@@ -241,14 +230,7 @@ $stockBefore = Invoke-RestMethod `
 $stockBefore | ConvertTo-Json -Depth 5
 
 # 5. Create order
-$orderBody = @{
-  lines = @(
-    @{
-      productId = $productId
-      quantity  = 3
-    }
-  )
-} | ConvertTo-Json -Depth 5
+$orderBody = "{`"lines`":[{`"productId`":$productId,`"quantity`":3}]}"
 
 $order = Invoke-RestMethod `
   -Method POST `
@@ -279,8 +261,6 @@ $stockAfter = Invoke-RestMethod `
   -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
 
 $stockAfter | ConvertTo-Json -Depth 5
-```
-
 </details>
 
 ---
