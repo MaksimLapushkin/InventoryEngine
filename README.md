@@ -265,6 +265,8 @@ $stockAfter | ConvertTo-Json -Depth 5
 
 </details>
 
+<img width="1208" height="928" alt="image" src="https://github.com/user-attachments/assets/9abada25-c297-4e65-8086-d00dadee9392" />
+
 ---
 
 ## Expected result
