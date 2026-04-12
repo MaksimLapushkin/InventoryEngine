@@ -21,6 +21,99 @@ All critical operations are transactional and consistent.
 
 ---
 
+## How to run
+
+### Prerequisites
+
+Make sure you have installed:
+
+- Java 21
+- Maven
+- Docker & Docker Compose
+
+---
+
+### 1. Clone the repository
+
+git clone https://github.com/MaksimLapushkin/InventoryEngine.git  
+cd InventoryEngine
+
+---
+
+### 2. Start infrastructure
+
+The project uses Docker to run required services:
+
+- PostgreSQL (database)
+- Kafka (event streaming)
+
+Start them with:
+
+docker-compose up -d
+
+---
+
+### 3. Build the application
+
+mvn clean package
+
+This will generate a JAR file in:
+
+target/InventoryEngine-*.jar
+
+---
+
+### 4. Run the application
+
+Option A: Run from JAR
+
+java -jar target/InventoryEngine-*.jar
+
+Option B: Run via Maven
+
+mvn spring-boot:run
+
+Option C: Run from IDE
+
+Run the main Spring Boot class.
+
+---
+
+### 5. Access the application
+
+- API base URL: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+
+---
+
+### 6. Run demo scenario
+
+Use the PowerShell demo provided below in the README to:
+
+- create warehouse and product
+- add stock
+- create and reserve an order
+- verify stock and order state
+
+---
+
+### Default ports
+
+- Application: 8080
+- PostgreSQL: 5432
+- Kafka: 9092
+
+---
+
+### Notes
+
+- Flyway automatically initializes the database schema on startup
+- Kafka events are produced after order operations
+- Make sure Docker containers are running before starting the application
+- If startup fails, check that required ports are not already in use
+
+---
+
 ## Key backend concepts demonstrated
 
 ### 1. Atomic stock reservation
@@ -111,22 +204,33 @@ InventoryEngine:
 ## Architecture overview
 
 ```text
-Client → InventoryEngine (command-side)
-               |
-               | transactional changes
-               v
-         PostgreSQL
-               |
-               | outbox_event
-               v
-        Outbox Publisher
-               |
-               v
-             Kafka
-               |
-               v
-audit-projection-service (read-side)
+Client
+  |
+  v
+InventoryEngine (write-side / command-side)
+  |
+  | 1. transactional domain changes
+  v
+PostgreSQL
+  |
+  | 2. outbox_event stored in the same transaction
+  v
+Outbox Publisher
+  |
+  | 3. publishes lifecycle events
+  v
+Kafka topic: order.lifecycle.v1
+  |
+  | 4. consumed asynchronously
+  v
+audit-projection-service (read-side / projection-side)
+  |
+  +--> order_timeline
+  +--> order_view
+  +--> read-only REST API
 ```
+InventoryEngine owns the transactional business logic and domain state.
+It persists domain changes and outbox records in the same transaction, then publishes lifecycle events to Kafka.
 
 ---
 
@@ -141,47 +245,131 @@ audit-projection-service (read-side)
 
 ---
 
-## API examples
+## API documentation
 
-### Create warehouse
+Interactive API documentation is available via Swagger UI after local startup.
 
-```http
-POST /api/warehouses
-```
+### Swagger UI
 
-### Create product
+http://localhost:8080/swagger-ui/index.html
 
-```http
-POST /api/products
-```
+Use Swagger to:
 
-### Add stock
+- inspect request bodies  
+- explore response schemas  
+- understand endpoint structure and parameters  
+<img width="1776" height="788" alt="image" src="https://github.com/user-attachments/assets/1d701f37-8b8d-4674-afcd-798800823b88" />
+<img width="1737" height="576" alt="image" src="https://github.com/user-attachments/assets/244fefbe-4970-4079-979a-b411d32cf087" />
 
-```http
-POST /api/stocks/add
-```
 
-### Create order
-
-```http
-POST /api/orders
-```
-
-### Reserve order
-
-```http
-POST /api/orders/{id}/reserve?warehouseId=1
-```
 
 ---
 
-## Example flow
+## Demo flow
 
-1. Create warehouse  
-2. Create product  
-3. Add stock  
-4. Create order  
-5. Reserve order  
+A minimal end-to-end scenario:
+
+1. Create a warehouse  
+2. Create a product  
+3. Add stock to the warehouse  
+4. Create an order  
+5. Reserve the order  
+6. Verify updated stock and order status  
+
+<details>
+<summary>Copy-paste demo (PowerShell)</summary>
+
+```powershell
+$base = "http://localhost:8080"
+
+# 1. Create warehouse
+$warehouseBody = '{"name":"Main Warehouse"}'
+
+$warehouse = Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/warehouses" `
+  -ContentType "application/json" `
+  -Body $warehouseBody
+
+$warehouseId = $warehouse.id
+$warehouse | ConvertTo-Json -Depth 5
+
+# 2. Create product
+$productBody = '{"sku":"SKU-001","name":"Milk","unit":"PIECE"}'
+
+$product = Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/products" `
+  -ContentType "application/json" `
+  -Body $productBody
+
+$productId = $product.id
+$product | ConvertTo-Json -Depth 5
+
+# 3. Add stock
+$addStockBody = "{`"productId`":$productId,`"warehouseId`":$warehouseId,`"quantity`":10}"
+
+Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/stocks/add" `
+  -ContentType "application/json" `
+  -Body $addStockBody
+
+# 4. Check stock before reservation
+$stockBefore = Invoke-RestMethod `
+  -Method GET `
+  -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
+
+$stockBefore | ConvertTo-Json -Depth 5
+
+# 5. Create order
+$orderBody = "{`"lines`":[{`"productId`":$productId,`"quantity`":3}]}"
+
+$order = Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/orders" `
+  -ContentType "application/json" `
+  -Body $orderBody
+
+$orderId = $order.id
+$order | ConvertTo-Json -Depth 5
+
+# 6. Reserve order
+$reservedOrder = Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/orders/$orderId/reserve?warehouseId=$warehouseId"
+
+$reservedOrder | ConvertTo-Json -Depth 5
+
+# 7. Check order after reservation
+$orderAfter = Invoke-RestMethod `
+  -Method GET `
+  -Uri "$base/api/orders/$orderId"
+
+$orderAfter | ConvertTo-Json -Depth 5
+
+# 8. Check stock after reservation
+$stockAfter = Invoke-RestMethod `
+  -Method GET `
+  -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
+
+$stockAfter | ConvertTo-Json -Depth 5
+```
+
+</details>
+
+<img width="1208" height="928" alt="image" src="https://github.com/user-attachments/assets/9abada25-c297-4e65-8086-d00dadee9392" />
+
+---
+
+## Expected result
+
+- stock is reserved atomically  
+- lifecycle events are written to outbox  
+- events are published to Kafka  
+- projection service updates read model  
+
+---
 
 **Result:**
 
@@ -220,10 +408,36 @@ It is designed to reflect real backend system behavior rather than simplified ac
 
 ## Related service
 
-- audit-projection-service  
-  consumes Kafka events and builds audit timeline and read model
+This project is designed to work together with:
+
+* [audit-projection-service](https://github.com/MaksimLapushkin/audit-projection-service)
+
+That service consumes Kafka order lifecycle events from `InventoryEngine` and builds:
+
+* append-only audit history
+* current order state projection
+* read-only endpoints for querying order timeline and latest status
+
+Together, the two repositories demonstrate a simple event-driven split between:
+
+* write-side / command-side logic in `InventoryEngine`
+* read-side / projection-side logic in `audit-projection-service`
 
 ---
+
+## Testing
+
+The project includes tests focused on correctness of transactional and concurrency-sensitive logic.
+
+Testing focus includes:
+
+* reservation correctness
+* atomic multi-line behavior
+* concurrency-safe stock updates
+* integration coverage for backend flows
+<img width="1599" height="361" alt="image" src="https://github.com/user-attachments/assets/7efcb4a4-c7eb-44f3-be09-d273f9bd4e57" />
+
+
 
 ## Author
 
