@@ -165,6 +165,10 @@ Use Swagger to:
 - inspect request bodies  
 - explore response schemas  
 - understand endpoint structure and parameters  
+<img width="1776" height="788" alt="image" src="https://github.com/user-attachments/assets/1d701f37-8b8d-4674-afcd-798800823b88" />
+<img width="1737" height="576" alt="image" src="https://github.com/user-attachments/assets/244fefbe-4970-4079-979a-b411d32cf087" />
+
+
 
 ---
 
