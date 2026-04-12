@@ -187,7 +187,6 @@ A minimal end-to-end scenario:
 <summary>Copy-paste demo (PowerShell)</summary>
 
 ```powershell
-$base = "http://localhost:8080"
 
 $base = "http://localhost:8080"
 
