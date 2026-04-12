@@ -4,7 +4,7 @@ import com.inventory.engine.exception.WarehouseNotFoundException;
 import com.inventory.engine.model.Warehouse;
 import com.inventory.engine.repository.WarehouseRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.*;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -27,13 +27,5 @@ public class WarehouseService {
     public Warehouse getById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new WarehouseNotFoundException(id));
-    }
-
-    @Transactional
-    public void delete(Long id) {
-        if (!repository.existsById(id)) {
-            throw new WarehouseNotFoundException(id);
-        }
-        repository.deleteById(id);
     }
 }

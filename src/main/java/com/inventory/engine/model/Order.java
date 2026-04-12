@@ -93,11 +93,4 @@ public class Order {
         this.status = OrderStatus.CANCELLED;
         this.warehouseId = null;
     }
-
-    public void fail() {
-        if (status != OrderStatus.CREATED) {
-            throw new IllegalStateException("order can only fail from CREATED status");
-        }
-        this.status = OrderStatus.FAILED;
-    }
 }

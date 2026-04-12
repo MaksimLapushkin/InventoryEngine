@@ -10,10 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -42,15 +39,5 @@ class WarehouseControllerTest {
                 .andExpect(header().string("Location", "http://localhost/api/warehouses/5"))
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.name").value("Main"));
-    }
-
-    @Test
-    void shouldDeleteWarehouse() throws Exception {
-        doNothing().when(warehouseService).delete(5L);
-
-        mockMvc.perform(delete("/api/warehouses/5"))
-                .andExpect(status().isNoContent());
-
-        verify(warehouseService).delete(5L);
     }
 }
