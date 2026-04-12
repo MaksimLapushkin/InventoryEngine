@@ -176,12 +176,12 @@ Use Swagger to:
 
 A minimal end-to-end scenario:
 
-1. Create a warehouse
-2. Create a product
-3. Add stock to the warehouse
-4. Create an order
-5. Reserve the order
-6. Verify updated stock and order status
+1. Create a warehouse  
+2. Create a product  
+3. Add stock to the warehouse  
+4. Create an order  
+5. Reserve the order  
+6. Verify updated stock and order status  
 
 <details>
 <summary>Copy-paste demo (PowerShell)</summary>
@@ -254,7 +254,6 @@ $stockAfter = Invoke-RestMethod `
 
 $stockAfter
 
----
 
 ## Example flow
 
