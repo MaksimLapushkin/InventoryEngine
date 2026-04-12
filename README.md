@@ -21,8 +21,6 @@ All critical operations are transactional and consistent.
 
 ---
 
----
-
 ## How to run
 
 ### Prerequisites
