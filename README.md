@@ -172,37 +172,87 @@ Use Swagger to:
 
 ---
 
-## API examples
+## Demo flow
 
-### Create warehouse
+A minimal end-to-end scenario:
 
-```http
-POST /api/warehouses
-```
+1. Create a warehouse
+2. Create a product
+3. Add stock to the warehouse
+4. Create an order
+5. Reserve the order
+6. Verify updated stock and order status
 
-### Create product
+<details>
+<summary>Copy-paste demo (PowerShell)</summary>
 
-```http
-POST /api/products
-```
+```powershell
+$base = "http://localhost:8080"
 
-### Add stock
+# 1. Create warehouse
+$warehouse = Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/warehouses" `
+  -ContentType "application/json" `
+  -Body '{"name":"Main Warehouse"}'
 
-```http
-POST /api/stocks/add
-```
+$warehouseId = $warehouse.id
+$warehouse
 
-### Create order
+# 2. Create product
+$product = Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/products" `
+  -ContentType "application/json" `
+  -Body '{"sku":"SKU-001","name":"Milk","unit":"PIECE"}'
 
-```http
-POST /api/orders
-```
+$productId = $product.id
+$product
 
-### Reserve order
+# 3. Add stock
+Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/stocks/add" `
+  -ContentType "application/json" `
+  -Body "{`"productId`":$productId,`"warehouseId`":$warehouseId,`"quantity`":10}"
 
-```http
-POST /api/orders/{id}/reserve?warehouseId=1
-```
+# 4. Check stock before reservation
+$stockBefore = Invoke-RestMethod `
+  -Method GET `
+  -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
+
+$stockBefore
+
+# 5. Create order
+$order = Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/orders" `
+  -ContentType "application/json" `
+  -Body "{`"lines`":[{`"productId`":$productId,`"quantity`":3}]}"
+
+$orderId = $order.id
+$order
+
+# 6. Reserve order
+$reservedOrder = Invoke-RestMethod `
+  -Method POST `
+  -Uri "$base/api/orders/$orderId/reserve?warehouseId=$warehouseId"
+
+$reservedOrder
+
+# 7. Check order after reservation
+$orderAfter = Invoke-RestMethod `
+  -Method GET `
+  -Uri "$base/api/orders/$orderId"
+
+$orderAfter
+
+# 8. Check stock after reservation
+$stockAfter = Invoke-RestMethod `
+  -Method GET `
+  -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
+
+$stockAfter
 
 ---
 
