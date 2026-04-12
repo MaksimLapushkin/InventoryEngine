@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inventory.engine.model.OutboxEvent;
 import com.inventory.engine.model.OutboxEventStatus;
 import com.inventory.engine.repository.OutboxEventRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,6 +30,8 @@ import java.util.concurrent.ExecutionException;
 @Component
 @ConditionalOnProperty(prefix = "app.kafka.order-lifecycle", name = "enabled", havingValue = "true")
 public class OutboxEventKafkaPublisher {
+
+    private static final Logger log = LoggerFactory.getLogger(OutboxEventKafkaPublisher.class);
 
     private static final int MAX_ERROR_MESSAGE_LENGTH = 1000;
     private static final Duration INITIAL_RETRY_BACKOFF = Duration.ofSeconds(30);
@@ -122,6 +126,10 @@ public class OutboxEventKafkaPublisher {
     public void publishNewEvents() {
         List<OutboxEvent> events = claimRetryableEvents();
 
+        if (!events.isEmpty()) {
+            log.info("Claimed {} outbox event(s) for publishing", events.size());
+        }
+
         for (OutboxEvent event : events) {
             publishClaimedEvent(event);
         }
@@ -131,6 +139,7 @@ public class OutboxEventKafkaPublisher {
         return transactionOperations.execute(status -> {
             Instant now = clock.instant();
             Instant claimExpiresAt = now.plus(claimTimeout);
+
             List<OutboxEvent> events = outboxEventRepository.findRetryableEvents(
                     RETRYABLE_STATUSES,
                     now,
@@ -149,33 +158,69 @@ public class OutboxEventKafkaPublisher {
     private void publishClaimedEvent(OutboxEvent outboxEvent) {
         try {
             OrderLifecycleEvent event = deserialize(outboxEvent);
+
+            log.info(
+                    "Publishing outbox event: id={}, aggregateId={}, eventType={}, attemptCount={}",
+                    outboxEvent.getEventId(),
+                    outboxEvent.getAggregateId(),
+                    outboxEvent.getEventType(),
+                    outboxEvent.getAttemptCount()
+            );
+
             kafkaTemplate.send(topic, outboxEvent.getAggregateId(), event).get();
+
+            log.info("Kafka ACK received for outbox event: {}", outboxEvent.getEventId());
+
             markPublished(outboxEvent);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            log.error("Interrupted while publishing outbox event {}", outboxEvent.getEventId(), e);
             markFailed(outboxEvent, e);
         } catch (ExecutionException | RuntimeException e) {
+            log.error("Failed to publish outbox event {}", outboxEvent.getEventId(), e);
             markFailed(outboxEvent, e);
         }
     }
 
     private void markPublished(OutboxEvent outboxEvent) {
         transactionOperations.execute(status -> {
-            findCurrentClaim(outboxEvent).ifPresent(event -> event.markPublished(clock.instant()));
+            findCurrentClaim(outboxEvent).ifPresentOrElse(
+                    event -> {
+                        event.markPublished(clock.instant());
+                        log.info("Marked outbox event as PUBLISHED: {}", outboxEvent.getEventId());
+                    },
+                    () -> log.warn(
+                            "Could not mark outbox event as PUBLISHED because current claim was not found: {}",
+                            outboxEvent.getEventId()
+                    )
+            );
             return null;
         });
     }
 
     private void markFailed(OutboxEvent outboxEvent, Exception exception) {
         transactionOperations.execute(status -> {
-            findCurrentClaim(outboxEvent).ifPresent(event -> {
-                int nextAttemptCount = event.getAttemptCount() + 1;
-                Instant nextAttemptAt = nextAttemptCount >= maxAttempts
-                        ? null
-                        : clock.instant().plus(backoffForAttempt(nextAttemptCount));
+            findCurrentClaim(outboxEvent).ifPresentOrElse(
+                    event -> {
+                        int nextAttemptCount = event.getAttemptCount() + 1;
+                        Instant nextAttemptAt = nextAttemptCount >= maxAttempts
+                                ? null
+                                : clock.instant().plus(backoffForAttempt(nextAttemptCount));
 
-                event.markFailed(errorMessage(exception), nextAttemptAt);
-            });
+                        event.markFailed(errorMessage(exception), nextAttemptAt);
+
+                        log.warn(
+                                "Marked outbox event as FAILED: id={}, nextAttemptCount={}, nextAttemptAt={}",
+                                outboxEvent.getEventId(),
+                                nextAttemptCount,
+                                nextAttemptAt
+                        );
+                    },
+                    () -> log.warn(
+                            "Could not mark outbox event as FAILED because current claim was not found: {}",
+                            outboxEvent.getEventId()
+                    )
+            );
             return null;
         });
     }
@@ -205,12 +250,15 @@ public class OutboxEventKafkaPublisher {
     private String errorMessage(Exception e) {
         Throwable cause = e.getCause() == null ? e : e.getCause();
         String message = cause.getMessage();
+
         if (message == null || message.isBlank()) {
             message = cause.getClass().getName();
         }
+
         if (message.length() > MAX_ERROR_MESSAGE_LENGTH) {
             return message.substring(0, MAX_ERROR_MESSAGE_LENGTH);
         }
+
         return message;
     }
 
