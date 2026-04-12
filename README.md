@@ -268,6 +268,20 @@ Together, the two repositories demonstrate a simple event-driven split between:
 
 ---
 
+## Testing
+
+The project includes tests focused on correctness of transactional and concurrency-sensitive logic.
+
+Testing focus includes:
+
+* reservation correctness
+* atomic multi-line behavior
+* concurrency-safe stock updates
+* integration coverage for backend flows
+<img width="1599" height="361" alt="image" src="https://github.com/user-attachments/assets/7efcb4a4-c7eb-44f3-be09-d273f9bd4e57" />
+
+
+
 ## Author
 
 Maksim Lapushkin
