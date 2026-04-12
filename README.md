@@ -112,13 +112,6 @@ Use the PowerShell demo provided below in the README to:
 - Make sure Docker containers are running before starting the application
 - If startup fails, check that required ports are not already in use
 
-### Notes
-
-- Flyway initializes the database schema automatically on startup
-- Kafka events are produced automatically after order operations
-- The application uses default configuration from `application.yml`
-- If services fail to start, ensure ports are not already in use
-
 ---
 
 ## Key backend concepts demonstrated
