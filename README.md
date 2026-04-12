@@ -260,14 +260,6 @@ $stockAfter
 
 ---
 
-## Example flow
-
-1. Create warehouse  
-2. Create product  
-3. Add stock  
-4. Create order  
-5. Reserve order  
-
 **Result:**
 
 - stock is reserved atomically  
