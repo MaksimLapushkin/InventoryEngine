@@ -261,11 +261,13 @@ $stockAfter = Invoke-RestMethod `
   -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
 
 $stockAfter | ConvertTo-Json -Depth 5
+```
+
 </details>
 
 ---
 
-**Result:**
+## Expected result
 
 - stock is reserved atomically  
 - lifecycle events are written to outbox  
