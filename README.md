@@ -21,6 +21,85 @@ All critical operations are transactional and consistent.
 
 ---
 
+---
+
+## How to run
+
+### Prerequisites
+
+Make sure you have installed:
+
+- Java 21
+- Maven
+- Docker
+
+---
+
+### 1. Start infrastructure (PostgreSQL + Kafka)
+
+Run required services via Docker:
+
+```bash
+docker-compose up -d
+```
+
+This will start:
+
+- PostgreSQL (database)
+- Kafka (event streaming)
+
+---
+
+### 2. Run the application
+
+```bash
+mvn spring-boot:run
+```
+
+Or run the main class from your IDE.
+
+---
+
+### 3. Access the application
+
+API base URL:
+
+http://localhost:8080
+
+Swagger UI:
+
+http://localhost:8080/swagger-ui/index.html
+
+---
+
+### 4. Run demo scenario
+
+Use the PowerShell demo provided above in this README to:
+
+- create warehouse and product
+- add stock
+- create and reserve an order
+- verify stock and order state
+
+---
+
+### Default ports
+
+- Application: 8080
+- PostgreSQL: 5432
+- Kafka: 9092
+
+---
+
+### Notes
+
+- Flyway initializes the database schema automatically on startup
+- Kafka events are produced automatically after order operations
+- The application uses default configuration from `application.yml`
+- If services fail to start, ensure ports are not already in use
+
+---
+
 ## Key backend concepts demonstrated
 
 ### 1. Atomic stock reservation
