@@ -251,8 +251,20 @@ It is designed to reflect real backend system behavior rather than simplified ac
 
 ## Related service
 
-- audit-projection-service  
-  consumes Kafka events and builds audit timeline and read model
+This project is designed to work together with:
+
+* [audit-projection-service](https://github.com/MaksimLapushkin/audit-projection-service)
+
+That service consumes Kafka order lifecycle events from `InventoryEngine` and builds:
+
+* append-only audit history
+* current order state projection
+* read-only endpoints for querying order timeline and latest status
+
+Together, the two repositories demonstrate a simple event-driven split between:
+
+* write-side / command-side logic in `InventoryEngine`
+* read-side / projection-side logic in `audit-projection-service`
 
 ---
 
