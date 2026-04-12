@@ -258,6 +258,8 @@ $stockAfter
 
 </details>
 
+---
+
 ## Example flow
 
 1. Create warehouse  
