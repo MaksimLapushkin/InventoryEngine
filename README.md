@@ -189,71 +189,97 @@ A minimal end-to-end scenario:
 ```powershell
 $base = "http://localhost:8080"
 
+$base = "http://localhost:8080"
+
 # 1. Create warehouse
+$warehouseBody = @{
+  name = "Main Warehouse"
+} | ConvertTo-Json
+
 $warehouse = Invoke-RestMethod `
   -Method POST `
   -Uri "$base/api/warehouses" `
   -ContentType "application/json" `
-  -Body '{"name":"Main Warehouse"}'
+  -Body $warehouseBody
 
 $warehouseId = $warehouse.id
-$warehouse
+$warehouse | ConvertTo-Json -Depth 5
 
 # 2. Create product
+$productBody = @{
+  sku  = "SKU-001"
+  name = "Milk"
+  unit = "PIECE"
+} | ConvertTo-Json
+
 $product = Invoke-RestMethod `
   -Method POST `
   -Uri "$base/api/products" `
   -ContentType "application/json" `
-  -Body '{"sku":"SKU-001","name":"Milk","unit":"PIECE"}'
+  -Body $productBody
 
 $productId = $product.id
-$product
+$product | ConvertTo-Json -Depth 5
 
 # 3. Add stock
+$addStockBody = @{
+  productId   = $productId
+  warehouseId = $warehouseId
+  quantity    = 10
+} | ConvertTo-Json
+
 Invoke-RestMethod `
   -Method POST `
   -Uri "$base/api/stocks/add" `
   -ContentType "application/json" `
-  -Body "{`"productId`":$productId,`"warehouseId`":$warehouseId,`"quantity`":10}"
+  -Body $addStockBody
 
 # 4. Check stock before reservation
 $stockBefore = Invoke-RestMethod `
   -Method GET `
   -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
 
-$stockBefore
+$stockBefore | ConvertTo-Json -Depth 5
 
 # 5. Create order
+$orderBody = @{
+  lines = @(
+    @{
+      productId = $productId
+      quantity  = 3
+    }
+  )
+} | ConvertTo-Json -Depth 5
+
 $order = Invoke-RestMethod `
   -Method POST `
   -Uri "$base/api/orders" `
   -ContentType "application/json" `
-  -Body "{`"lines`":[{`"productId`":$productId,`"quantity`":3}]}"
+  -Body $orderBody
 
 $orderId = $order.id
-$order
+$order | ConvertTo-Json -Depth 5
 
 # 6. Reserve order
 $reservedOrder = Invoke-RestMethod `
   -Method POST `
   -Uri "$base/api/orders/$orderId/reserve?warehouseId=$warehouseId"
 
-$reservedOrder
+$reservedOrder | ConvertTo-Json -Depth 5
 
 # 7. Check order after reservation
 $orderAfter = Invoke-RestMethod `
   -Method GET `
   -Uri "$base/api/orders/$orderId"
 
-$orderAfter
+$orderAfter | ConvertTo-Json -Depth 5
 
 # 8. Check stock after reservation
 $stockAfter = Invoke-RestMethod `
   -Method GET `
   -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
 
-$stockAfter
-
+$stockAfter | ConvertTo-Json -Depth 5
 ```
 
 </details>
