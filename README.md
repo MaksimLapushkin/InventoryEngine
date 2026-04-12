@@ -256,6 +256,22 @@ $stockAfter
 
 ```
 
+</details>
+
+## Example flow
+
+1. Create warehouse  
+2. Create product  
+3. Add stock  
+4. Create order  
+5. Reserve order  
+
+**Result:**
+
+- stock is reserved atomically  
+- lifecycle events are written to outbox  
+- events are published to Kafka  
+- projection service updates read model  
 
 ---
 
