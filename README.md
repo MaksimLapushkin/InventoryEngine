@@ -29,50 +29,66 @@ Make sure you have installed:
 
 - Java 21
 - Maven
-- Docker
+- Docker & Docker Compose
 
 ---
 
-### 1. Start infrastructure (PostgreSQL + Kafka)
+### 1. Clone the repository
 
-Run required services via Docker:
+git clone https://github.com/MaksimLapushkin/InventoryEngine.git  
+cd InventoryEngine
 
-```bash
-docker-compose up -d
-```
+---
 
-This will start:
+### 2. Start infrastructure
+
+The project uses Docker to run required services:
 
 - PostgreSQL (database)
 - Kafka (event streaming)
 
+Start them with:
+
+docker-compose up -d
+
 ---
 
-### 2. Run the application
+### 3. Build the application
 
-```bash
+mvn clean package
+
+This will generate a JAR file in:
+
+target/InventoryEngine-*.jar
+
+---
+
+### 4. Run the application
+
+Option A: Run from JAR
+
+java -jar target/InventoryEngine-*.jar
+
+Option B: Run via Maven
+
 mvn spring-boot:run
-```
 
-Or run the main class from your IDE.
+Option C: Run from IDE
 
----
-
-### 3. Access the application
-
-API base URL:
-
-http://localhost:8080
-
-Swagger UI:
-
-http://localhost:8080/swagger-ui/index.html
+Run the main Spring Boot class.
 
 ---
 
-### 4. Run demo scenario
+### 5. Access the application
 
-Use the PowerShell demo provided above in this README to:
+- API base URL: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+
+---
+
+### 6. Run demo scenario
+
+Use the PowerShell demo provided below in the README to:
 
 - create warehouse and product
 - add stock
@@ -88,6 +104,13 @@ Use the PowerShell demo provided above in this README to:
 - Kafka: 9092
 
 ---
+
+### Notes
+
+- Flyway automatically initializes the database schema on startup
+- Kafka events are produced after order operations
+- Make sure Docker containers are running before starting the application
+- If startup fails, check that required ports are not already in use
 
 ### Notes
 
