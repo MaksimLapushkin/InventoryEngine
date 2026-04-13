@@ -2,6 +2,9 @@ package com.inventory.engine.service;
 
 import com.inventory.engine.exception.NotEnoughStockException;
 import com.inventory.engine.exception.StockNotFoundException;
+import com.inventory.engine.model.Order;
+import com.inventory.engine.model.OrderLine;
+import com.inventory.engine.model.OrderStatus;
 import com.inventory.engine.model.StockItem;
 import com.inventory.engine.model.StockKey;
 import com.inventory.engine.model.Unit;
@@ -17,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,6 +161,120 @@ class StockServiceTest {
             assertThatThrownBy(() -> stockService.releaseStock(productId, warehouseId, 4))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("cannot release more items than reserved");
+        }
+    }
+
+    @Nested
+    @DisplayName("fulfillStock()")
+    class FulfillStockTests {
+
+        @Test
+        void shouldFulfillReservedStockSuccessfully() {
+            Long productId = createProduct();
+            Long warehouseId = createWarehouse();
+
+            stockService.addStock(productId, warehouseId, 5);
+            stockService.reserveStock(productId, warehouseId, 3);
+            stockService.fulfillStock(productId, warehouseId, 2);
+
+            StockItem result = stockRepository
+                    .findById(new StockKey(productId, warehouseId))
+                    .orElseThrow();
+
+            assertThat(result.getAvailable()).isEqualTo(2);
+            assertThat(result.getReserved()).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("fulfillOrder()")
+    class FulfillOrderTests {
+
+        @Test
+        void shouldRequireReservedOrder() {
+            Long warehouseId = createWarehouse();
+            Order order = new Order(List.of(new OrderLine(createProduct(), 1)));
+
+            assertThatThrownBy(() -> stockService.fulfillOrder(warehouseId, order))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RESERVED");
+        }
+
+        @Test
+        void shouldFulfillAllOrderLinesAndMarkOrderFulfilled() {
+            Long firstProductId = createProduct();
+            Long secondProductId = createProduct();
+            Long warehouseId = createWarehouse();
+            Order order = new Order(List.of(
+                    new OrderLine(secondProductId, 2),
+                    new OrderLine(firstProductId, 3)
+            ));
+
+            stockService.addStock(firstProductId, warehouseId, 5);
+            stockService.addStock(secondProductId, warehouseId, 5);
+            stockService.reserveOrderAtomically(warehouseId, order);
+
+            stockService.fulfillOrder(warehouseId, order);
+
+            StockItem firstStock = stockRepository
+                    .findById(new StockKey(firstProductId, warehouseId))
+                    .orElseThrow();
+            StockItem secondStock = stockRepository
+                    .findById(new StockKey(secondProductId, warehouseId))
+                    .orElseThrow();
+
+            assertThat(firstStock.getAvailable()).isEqualTo(2);
+            assertThat(firstStock.getReserved()).isEqualTo(0);
+            assertThat(secondStock.getAvailable()).isEqualTo(3);
+            assertThat(secondStock.getReserved()).isEqualTo(0);
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.FULFILLED);
+            assertThat(order.getWarehouseId()).isEqualTo(warehouseId);
+        }
+    }
+
+    @Nested
+    @DisplayName("releaseOrderReservation()")
+    class ReleaseOrderReservationTests {
+
+        @Test
+        void shouldRequireReservedOrder() {
+            Long warehouseId = createWarehouse();
+            Order order = new Order(List.of(new OrderLine(createProduct(), 1)));
+
+            assertThatThrownBy(() -> stockService.releaseOrderReservation(warehouseId, order))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RESERVED");
+        }
+
+        @Test
+        void shouldReleaseAllOrderLinesAndReturnOrderToCreated() {
+            Long firstProductId = createProduct();
+            Long secondProductId = createProduct();
+            Long warehouseId = createWarehouse();
+            Order order = new Order(List.of(
+                    new OrderLine(secondProductId, 2),
+                    new OrderLine(firstProductId, 3)
+            ));
+
+            stockService.addStock(firstProductId, warehouseId, 5);
+            stockService.addStock(secondProductId, warehouseId, 5);
+            stockService.reserveOrderAtomically(warehouseId, order);
+
+            stockService.releaseOrderReservation(warehouseId, order);
+
+            StockItem firstStock = stockRepository
+                    .findById(new StockKey(firstProductId, warehouseId))
+                    .orElseThrow();
+            StockItem secondStock = stockRepository
+                    .findById(new StockKey(secondProductId, warehouseId))
+                    .orElseThrow();
+
+            assertThat(firstStock.getAvailable()).isEqualTo(5);
+            assertThat(firstStock.getReserved()).isEqualTo(0);
+            assertThat(secondStock.getAvailable()).isEqualTo(5);
+            assertThat(secondStock.getReserved()).isEqualTo(0);
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.CREATED);
+            assertThat(order.getWarehouseId()).isNull();
         }
     }
 

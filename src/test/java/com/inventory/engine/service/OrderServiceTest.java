@@ -111,6 +111,30 @@ class OrderServiceTest {
     }
 
     @Test
+    void shouldFulfillOrderAndPublishFulfilledEvent() {
+        Order order = withId(new Order(List.of(new OrderLine(7L, 2))), 18L);
+        order.reserve(3L);
+        when(repository.findById(18L)).thenReturn(Optional.of(order));
+        doAnswer(invocation -> {
+            invocation.<Order>getArgument(1).fulfill();
+            return null;
+        }).when(stockService).fulfillOrder(eq(3L), any(Order.class));
+        when(repository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        orderService.fulfill(18L);
+
+        verify(stockService).fulfillOrder(eq(3L), eq(order));
+        OrderLifecycleEvent event = capturePublishedEvent();
+        assertEnvelope(event, 18L, OrderLifecycleEventType.ORDER_FULFILLED);
+        assertThat(event.payload()).isEqualTo(new OrderLifecyclePayload(
+                18L,
+                "FULFILLED",
+                3L,
+                List.of(new OrderLinePayload(7L, 2))
+        ));
+    }
+
+    @Test
     void shouldPublishOrderCancelledEventForCreatedOrder() {
         Order order = withId(new Order(List.of(new OrderLine(7L, 2))), 14L);
         when(repository.findById(14L)).thenReturn(Optional.of(order));

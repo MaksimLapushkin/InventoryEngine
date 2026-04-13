@@ -70,6 +70,18 @@ public class OrderController {
         return ResponseEntity.ok(orderService.reserve(orderId,warehouseId));
     }
 
+    @PostMapping("/{orderId}/fulfill")
+    @Operation(summary = "Fulfill order stock")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Order fulfilled"),
+            @ApiResponse(responseCode = "400", description = "Cannot fulfill reservation"),
+            @ApiResponse(responseCode = "404", description = "Order or stock not found")
+    })
+    public ResponseEntity<OrderResponse> fulfill (
+            @PathVariable Long orderId){
+        return ResponseEntity.ok(orderService.fulfill(orderId));
+    }
+
     @PostMapping("/{orderId}/release")
     @Operation(summary = "Release order reservation")
     @ApiResponses({

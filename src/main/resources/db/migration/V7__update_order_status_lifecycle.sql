@@ -1,0 +1,5 @@
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS chk_orders_status;
+
+ALTER TABLE orders
+    ADD CONSTRAINT chk_orders_status
+        CHECK (status IN ('CREATED', 'RESERVED', 'FULFILLED', 'CANCELLED'));

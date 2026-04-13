@@ -83,6 +83,16 @@ public class Order {
         this.warehouseId = null;
     }
 
+    public void fulfill() {
+        if (status != OrderStatus.RESERVED) {
+            throw new IllegalStateException("order must be in RESERVED status to fulfill reservation");
+        }
+        if (warehouseId == null) {
+            throw new IllegalStateException("reserved order must have a reservation warehouse");
+        }
+        this.status = OrderStatus.FULFILLED;
+    }
+
     public void cancel() {
         if (status == OrderStatus.CANCELLED) {
             throw new IllegalStateException("order is already cancelled");

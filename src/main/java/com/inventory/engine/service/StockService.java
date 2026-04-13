@@ -51,6 +51,19 @@ public class StockService {
     }
 
     @Transactional
+    public void fulfillStock(Long productId, Long warehouseId, int qty) {
+        validateQty(qty);
+        StockKey key = new StockKey(productId,warehouseId);
+        int updated = repository.fulfillStock(productId, warehouseId, qty);
+        if (updated == 0) {
+            if (repository.existsById(key)) {
+                throw new IllegalStateException("cannot fulfill more items than reserved");
+            }
+            throw new StockNotFoundException(productId, warehouseId);
+        }
+    }
+
+    @Transactional
     public void releaseStock(Long productId, Long warehouseId, int qty) {
         validateQty(qty);
         StockKey key = new StockKey(productId,warehouseId);
@@ -69,11 +82,30 @@ public class StockService {
             throw new IllegalStateException("order must be in RESERVED status to release reservation");
         }
 
-        List<OrderLine> items = order.getItems();
+        List<OrderLine> items = order.getItems().stream()
+                .sorted(Comparator.comparing(OrderLine::getProductId))
+                .toList();
+
         for (OrderLine line : items){
             releaseStock(line.getProductId(), warehouseId, line.getQuantity());
         }
         order.releaseReservation();
+    }
+
+    @Transactional
+    public void fulfillOrder(Long warehouseId, Order order) {
+        if (order.getStatus() != OrderStatus.RESERVED) {
+            throw new IllegalStateException("order must be in RESERVED status to fulfill reservation");
+        }
+
+        List<OrderLine> items = order.getItems().stream()
+                .sorted(Comparator.comparing(OrderLine::getProductId))
+                .toList();
+
+        for (OrderLine line : items){
+            fulfillStock(line.getProductId(), warehouseId, line.getQuantity());
+        }
+        order.fulfill();
     }
 
     @Transactional

@@ -14,6 +14,7 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -129,6 +130,26 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.status").value("CREATED"))
                 .andExpect(jsonPath("$.warehouseId").value(nullValue()));
+    }
+
+    @Test
+    void shouldFulfillOrder() throws Exception {
+        OrderResponse response = new OrderResponse(
+                11L,
+                List.of(new OrderLineResponse(4L, 1)),
+                "FULFILLED",
+                3L
+        );
+
+        when(orderService.fulfill(11L)).thenReturn(response);
+
+        mockMvc.perform(post("/api/orders/11/fulfill"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(11))
+                .andExpect(jsonPath("$.status").value("FULFILLED"))
+                .andExpect(jsonPath("$.warehouseId").value(3));
+
+        verify(orderService).fulfill(11L);
     }
 
     @Test

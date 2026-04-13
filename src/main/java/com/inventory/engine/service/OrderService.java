@@ -76,6 +76,18 @@ public class OrderService {
     }
 
     @Transactional
+    public OrderResponse fulfill(Long orderId) {
+        Order order = repository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        Long warehouseId = getReservationWarehouseId(order);
+        stockService.fulfillOrder(warehouseId,order);
+        Order savedOrder = repository.save(order);
+        publishLifecycleEvent(savedOrder, OrderLifecycleEventType.ORDER_FULFILLED);
+
+        return OrderMapper.toResponse(savedOrder);
+    }
+
+    @Transactional
     public OrderResponse releaseReservation(Long orderId) {
         Order order = repository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));

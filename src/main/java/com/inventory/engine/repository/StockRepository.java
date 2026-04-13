@@ -43,6 +43,18 @@ public interface StockRepository extends JpaRepository<StockItem, StockKey> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             update StockItem s
+            set s.reserved = s.reserved - :qty
+            where s.id.productId = :productId
+              and s.id.warehouseId = :warehouseId
+              and s.reserved >= :qty
+            """)
+    int fulfillStock(@Param("productId") Long productId,
+                     @Param("warehouseId") Long warehouseId,
+                     @Param("qty") int qty);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update StockItem s
             set s.available = s.available + :qty
             where s.id.productId = :productId
               and s.id.warehouseId = :warehouseId
