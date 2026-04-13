@@ -1,7 +1,6 @@
 package com.inventory.engine.controller;
 
 import com.inventory.engine.dto.AddStockRequest;
-import com.inventory.engine.dto.ReserveStockRequest;
 import com.inventory.engine.dto.StockResponse;
 import com.inventory.engine.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,38 +31,6 @@ public class StockController {
     })
     public ResponseEntity<Void> add(@Valid @RequestBody AddStockRequest request) {
         stockService.addStock(
-                request.getProductId(),
-                request.getWarehouseId(),
-                request.getQuantity()
-        );
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/reserve")
-    @Operation(summary = "Reserve stock")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Stock reserved"),
-            @ApiResponse(responseCode = "400", description = "Not enough stock or validation failed"),
-            @ApiResponse(responseCode = "404", description = "Stock not found")
-    })
-    public ResponseEntity<Void> reserve(@Valid @RequestBody ReserveStockRequest request) {
-        stockService.reserveStock(
-                request.getProductId(),
-                request.getWarehouseId(),
-                request.getQuantity()
-        );
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/release")
-    @Operation(summary = "Release stock reservation")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Stock released"),
-            @ApiResponse(responseCode = "400", description = "Cannot release stock"),
-            @ApiResponse(responseCode = "404", description = "Stock not found")
-    })
-    public ResponseEntity<Void> release(@Valid @RequestBody ReserveStockRequest request) {
-        stockService.releaseStock(
                 request.getProductId(),
                 request.getWarehouseId(),
                 request.getQuantity()

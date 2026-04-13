@@ -258,6 +258,18 @@ Use Swagger to:
 - inspect request bodies  
 - explore response schemas  
 - understand endpoint structure and parameters  
+
+Stock reservation and release are internal stock operations. Public business flows use order lifecycle endpoints:
+
+- `POST /api/orders/{orderId}/reserve?warehouseId={warehouseId}`
+- `POST /api/orders/{orderId}/release`
+- `POST /api/orders/{orderId}/fulfill`
+
+Public stock endpoints are limited to adding and querying stock:
+
+- `POST /api/stocks/add`
+- `GET /api/stocks`
+
 <img width="1776" height="788" alt="image" src="https://github.com/user-attachments/assets/1d701f37-8b8d-4674-afcd-798800823b88" />
 <img width="1737" height="576" alt="image" src="https://github.com/user-attachments/assets/244fefbe-4970-4079-979a-b411d32cf087" />
 
@@ -273,7 +285,7 @@ A minimal end-to-end scenario:
 2. Create a product  
 3. Add stock to the warehouse  
 4. Create an order  
-5. Reserve the order  
+5. Reserve the order through the order lifecycle endpoint  
 6. Verify updated stock and order status  
 
 <details>

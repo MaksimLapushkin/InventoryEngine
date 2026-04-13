@@ -37,16 +37,6 @@ class StockControllerTest {
     }
 
     @Test
-    void shouldReserveStock() throws Exception {
-        mockMvc.perform(post("/api/stocks/reserve")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":1,\"warehouseId\":2,\"quantity\":2}"))
-                .andExpect(status().isOk());
-
-        verify(stockService).reserveStock(1L, 2L, 2);
-    }
-
-    @Test
     void shouldRejectInvalidRequest() throws Exception {
         mockMvc.perform(post("/api/stocks/add")
                         .contentType(MediaType.APPLICATION_JSON)
