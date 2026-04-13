@@ -183,35 +183,41 @@ A minimal end-to-end scenario:
 ```powershell
 $base = "http://localhost:8080"
 
-# Create warehouse
-$warehouse = Invoke-RestMethod -Method POST -Uri "$base/api/warehouses" `
-  -ContentType "application/json" -Body '{"name":"Main Warehouse"}'
+$warehouse = Invoke-RestMethod -Method POST -Uri "$base/api/warehouses" -ContentType "application/json" -Body '{"name":"Main Warehouse"}'
+$warehouse
 
 $warehouseId = $warehouse.id
 
-# Create product
-$product = Invoke-RestMethod -Method POST -Uri "$base/api/products" `
-  -ContentType "application/json" -Body '{"sku":"SKU-001","name":"Milk","unit":"PIECE"}'
+$product = Invoke-RestMethod -Method POST -Uri "$base/api/products" -ContentType "application/json" -Body '{"sku":"SKU-001","name":"Milk","unit":"PIECE"}'
+$product
 
 $productId = $product.id
 
-# Add stock
-Invoke-RestMethod -Method POST -Uri "$base/api/stocks/add" `
-  -ContentType "application/json" `
-  -Body "{`"productId`":$productId,`"warehouseId`":$warehouseId,`"quantity`":10}"
+$stockAdded = Invoke-RestMethod -Method POST -Uri "$base/api/stocks/add" -ContentType "application/json" -Body "{`"productId`":$productId,`"warehouseId`":$warehouseId,`"quantity`":10}"
+$stockAdded
 
-# Create order
-$order = Invoke-RestMethod -Method POST -Uri "$base/api/orders" `
-  -ContentType "application/json" `
-  -Body "{`"lines`":[{`"productId`":$productId,`"quantity`":3}]}"
+$order = Invoke-RestMethod -Method POST -Uri "$base/api/orders" -ContentType "application/json" -Body "{`"lines`":[{`"productId`":$productId,`"quantity`":3}]}"
+$order
 
 $orderId = $order.id
 
-# Reserve
-Invoke-RestMethod -Method POST -Uri "$base/api/orders/$orderId/reserve?warehouseId=$warehouseId"
+$reservedOrder = Invoke-RestMethod -Method POST -Uri "$base/api/orders/$orderId/reserve?warehouseId=$warehouseId"
+$reservedOrder
 
-# Fulfill
-Invoke-RestMethod -Method POST -Uri "$base/api/orders/$orderId/fulfill"
+$orderAfterReserve = Invoke-RestMethod -Method GET -Uri "$base/api/orders/$orderId"
+$orderAfterReserve
+
+$stockAfterReserve = Invoke-RestMethod -Method GET -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
+$stockAfterReserve
+
+$fulfilledOrder = Invoke-RestMethod -Method POST -Uri "$base/api/orders/$orderId/fulfill"
+$fulfilledOrder
+
+$orderAfterFulfill = Invoke-RestMethod -Method GET -Uri "$base/api/orders/$orderId"
+$orderAfterFulfill
+
+$stockAfterFulfill = Invoke-RestMethod -Method GET -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
+$stockAfterFulfill
 ```
 
 </details>
