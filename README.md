@@ -2,7 +2,16 @@
 
 InventoryEngine is a Spring Boot backend service that manages products, warehouses, stock, and orders, with a focus on **atomic stock reservation** and **event-driven architecture**.
 
-The project is designed to demonstrate production-style backend concepts.
+---
+
+## Architecture
+
+The system follows a command-side / read-side separation:
+
+- **InventoryEngine** → write-side / command-side  
+- **audit-projection-service** → read-side / projection-side  
+
+InventoryEngine owns transactional domain logic and publishes lifecycle events to Kafka.
 
 ---
 
@@ -21,111 +30,18 @@ All critical operations are transactional and consistent.
 
 ---
 
-## How to run
+## Key concepts
 
-### Prerequisites
-
-Make sure you have installed:
-
-- Java 21
-- Maven
-- Docker & Docker Compose
-
----
-
-### 1. Clone the repository
-
-git clone https://github.com/MaksimLapushkin/InventoryEngine.git  
-cd InventoryEngine
-
----
-
-### 2. Start infrastructure
-
-The project uses Docker to run required services:
-
-- PostgreSQL (database)
-- Kafka (event streaming)
-
-Start them with:
-
-docker-compose up -d
-
----
-
-### 3. Build the application
-
-mvn clean package
-
-This will generate a JAR file in:
-
-target/InventoryEngine-*.jar
-
----
-
-### 4. Run the application
-
-Option A: Run from JAR
-
-java -jar target/InventoryEngine-*.jar
-
-Option B: Run via Maven
-
-mvn spring-boot:run
-
-Option C: Run from IDE
-
-Run the main Spring Boot class.
-
----
-
-### 5. Access the application
-
-- API base URL: http://localhost:8080
-- Swagger UI: http://localhost:8080/swagger-ui/index.html
-
----
-
-### 6. Run demo scenario
-
-Use the PowerShell demo provided below in the README to:
-
-- create warehouse and product
-- add stock
-- create and reserve an order
-- verify stock and order state
-
----
-
-### Default ports
-
-- Application: 8080
-- PostgreSQL: 5432
-- Kafka: 9092
-
----
-
-### Notes
-
-- Flyway automatically initializes the database schema on startup
-- Kafka events are produced after order operations
-- Make sure Docker containers are running before starting the application
-- If startup fails, check that required ports are not already in use
-
----
-
-## Key backend concepts demonstrated
-
-### 1. Atomic stock reservation
+### Atomic stock reservation
 
 Orders may contain multiple lines.
 
-Reservation logic guarantees:
+Reservation guarantees:
 
 - either **all items are reserved**
 - or **nothing is reserved**
 
-This is implemented using:
+Implemented using:
 
 - database-level conditional updates
 - transactional boundaries
@@ -133,7 +49,7 @@ This is implemented using:
 
 ---
 
-### 2. Concurrency handling
+### Concurrency handling
 
 The system is designed to behave correctly under concurrent requests:
 
@@ -143,31 +59,24 @@ The system is designed to behave correctly under concurrent requests:
 
 ---
 
-### 3. Transactional outbox pattern
+### Transactional outbox pattern
 
-The service uses an **outbox pattern** to reliably publish events to Kafka.
+Problem:
 
-**Problem:**
+> database commit and Kafka publish are not atomic
 
-> DB commit and Kafka publish are not atomic.
+Solution:
 
-**Solution:**
-
-- domain changes and event creation are stored in `outbox_event` in the same transaction
-- a scheduled publisher reads `NEW` events
-- sends them to Kafka
+- domain changes and events are stored in `outbox_event` in the same transaction
+- background publisher reads `NEW` events
+- publishes to Kafka
 - marks them as `PUBLISHED`
-
-This ensures:
-
-- no lost events
-- no inconsistent state between DB and Kafka
 
 ---
 
-### 4. Event-driven architecture
+### Event-driven architecture
 
-The service publishes order lifecycle events to Kafka topic:
+The service publishes events to:
 
 ```text
 order.lifecycle.v1
@@ -177,103 +86,89 @@ Events include:
 
 - `ORDER_CREATED`
 - `ORDER_RESERVED`
+- `ORDER_FULFILLED`
 - `ORDER_RELEASED`
 - `ORDER_CANCELLED`
 
-These events are consumed by a separate service:
+These events are consumed by:
 
-👉 `audit-projection-service`
-
----
-
-### 5. Separation of concerns (Command vs Read)
-
-The system is split into:
-
-- **InventoryEngine** → write-side / command-side  
-- **audit-projection-service** → read-side / projection  
-
-InventoryEngine:
-
-- owns transactional logic
-- modifies domain state
-- publishes events
-
----
-
-## Architecture overview
-
-```text
-Client
-  |
-  v
-InventoryEngine (write-side / command-side)
-  |
-  | 1. transactional domain changes
-  v
-PostgreSQL
-  |
-  | 2. outbox_event stored in the same transaction
-  v
-Outbox Publisher
-  |
-  | 3. publishes lifecycle events
-  v
-Kafka topic: order.lifecycle.v1
-  |
-  | 4. consumed asynchronously
-  v
-audit-projection-service (read-side / projection-side)
-  |
-  +--> order_timeline
-  +--> order_view
-  +--> read-only REST API
-```
-InventoryEngine owns the transactional business logic and domain state.
-It persists domain changes and outbox records in the same transaction, then publishes lifecycle events to Kafka.
+audit-projection-service
 
 ---
 
 ## Main entities
 
-- Product
-- Warehouse
-- StockItem (composite key)
-- Order
-- OrderLine
-- OutboxEvent
+- Product  
+- Warehouse  
+- StockItem (composite key)  
+- Order  
+- OrderLine  
+- OutboxEvent  
 
 ---
 
-## API documentation
+## REST API
 
-Interactive API documentation is available via Swagger UI after local startup.
+Swagger UI:
 
-### Swagger UI
-
+```
 http://localhost:8080/swagger-ui/index.html
+```
 
-Use Swagger to:
+Use it to explore endpoints and payloads.
+
+<img width="1679" height="755" alt="image" src="https://github.com/user-attachments/assets/2567ac54-c6b1-4471-8056-6a3d2fff76d3" />
+<img width="1660" height="580" alt="image" src="https://github.com/user-attachments/assets/8e2b91aa-b8c6-439e-a20e-2b358bb4e56a" />
+
+---
+
+## How to run
+
+### Prerequisites
+
+- Java 21  
+- Maven  
+- Docker & Docker Compose  
+
+---
+
+### 1. Clone repository
+
+```bash
+git clone https://github.com/MaksimLapushkin/InventoryEngine.git
+cd InventoryEngine
+```
+
+---
+
+### 2. Start infrastructure
+
+```bash
+docker-compose up -d
+```
+
+---
+
+### 3. Run application
+
+```bash
+mvn spring-boot:run
+```
+
+Or:
 
 - inspect request bodies  
 - explore response schemas  
 - understand endpoint structure and parameters  
-
-Stock reservation and release are internal stock operations. Public business flows use order lifecycle endpoints:
-
-- `POST /api/orders/{orderId}/reserve?warehouseId={warehouseId}`
-- `POST /api/orders/{orderId}/release`
-- `POST /api/orders/{orderId}/fulfill`
-
-Public stock endpoints are limited to adding and querying stock:
-
-- `POST /api/stocks/add`
-- `GET /api/stocks`
-
 <img width="1776" height="788" alt="image" src="https://github.com/user-attachments/assets/1d701f37-8b8d-4674-afcd-798800823b88" />
 <img width="1737" height="576" alt="image" src="https://github.com/user-attachments/assets/244fefbe-4970-4079-979a-b411d32cf087" />
 
+---
 
+### 4. Access
+
+- API: http://localhost:8080  
+- Swagger: http://localhost:8080/swagger-ui/index.html  
 
 ---
 
@@ -285,87 +180,44 @@ A minimal end-to-end scenario:
 2. Create a product  
 3. Add stock to the warehouse  
 4. Create an order  
-5. Reserve the order through the order lifecycle endpoint  
+5. Reserve the order  
 6. Verify updated stock and order status  
 
 <details>
-<summary>Copy-paste demo (PowerShell)</summary>
+<summary>PowerShell demo</summary>
 
 ```powershell
 $base = "http://localhost:8080"
 
-# 1. Create warehouse
-$warehouseBody = '{"name":"Main Warehouse"}'
-
-$warehouse = Invoke-RestMethod `
-  -Method POST `
-  -Uri "$base/api/warehouses" `
-  -ContentType "application/json" `
-  -Body $warehouseBody
+# Create warehouse
+$warehouse = Invoke-RestMethod -Method POST -Uri "$base/api/warehouses" `
+  -ContentType "application/json" -Body '{"name":"Main Warehouse"}'
 
 $warehouseId = $warehouse.id
-$warehouse | ConvertTo-Json -Depth 5
 
-# 2. Create product
-$productBody = '{"sku":"SKU-001","name":"Milk","unit":"PIECE"}'
-
-$product = Invoke-RestMethod `
-  -Method POST `
-  -Uri "$base/api/products" `
-  -ContentType "application/json" `
-  -Body $productBody
+# Create product
+$product = Invoke-RestMethod -Method POST -Uri "$base/api/products" `
+  -ContentType "application/json" -Body '{"sku":"SKU-001","name":"Milk","unit":"PIECE"}'
 
 $productId = $product.id
-$product | ConvertTo-Json -Depth 5
 
-# 3. Add stock
-$addStockBody = "{`"productId`":$productId,`"warehouseId`":$warehouseId,`"quantity`":10}"
-
-Invoke-RestMethod `
-  -Method POST `
-  -Uri "$base/api/stocks/add" `
+# Add stock
+Invoke-RestMethod -Method POST -Uri "$base/api/stocks/add" `
   -ContentType "application/json" `
-  -Body $addStockBody
+  -Body "{`"productId`":$productId,`"warehouseId`":$warehouseId,`"quantity`":10}"
 
-# 4. Check stock before reservation
-$stockBefore = Invoke-RestMethod `
-  -Method GET `
-  -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
-
-$stockBefore | ConvertTo-Json -Depth 5
-
-# 5. Create order
-$orderBody = "{`"lines`":[{`"productId`":$productId,`"quantity`":3}]}"
-
-$order = Invoke-RestMethod `
-  -Method POST `
-  -Uri "$base/api/orders" `
+# Create order
+$order = Invoke-RestMethod -Method POST -Uri "$base/api/orders" `
   -ContentType "application/json" `
-  -Body $orderBody
+  -Body "{`"lines`":[{`"productId`":$productId,`"quantity`":3}]}"
 
 $orderId = $order.id
-$order | ConvertTo-Json -Depth 5
 
-# 6. Reserve order
-$reservedOrder = Invoke-RestMethod `
-  -Method POST `
-  -Uri "$base/api/orders/$orderId/reserve?warehouseId=$warehouseId"
+# Reserve
+Invoke-RestMethod -Method POST -Uri "$base/api/orders/$orderId/reserve?warehouseId=$warehouseId"
 
-$reservedOrder | ConvertTo-Json -Depth 5
-
-# 7. Check order after reservation
-$orderAfter = Invoke-RestMethod `
-  -Method GET `
-  -Uri "$base/api/orders/$orderId"
-
-$orderAfter | ConvertTo-Json -Depth 5
-
-# 8. Check stock after reservation
-$stockAfter = Invoke-RestMethod `
-  -Method GET `
-  -Uri "$base/api/stocks?productId=$productId&warehouseId=$warehouseId"
-
-$stockAfter | ConvertTo-Json -Depth 5
+# Fulfill
+Invoke-RestMethod -Method POST -Uri "$base/api/orders/$orderId/fulfill"
 ```
 
 </details>
@@ -377,79 +229,48 @@ $stockAfter | ConvertTo-Json -Depth 5
 ## Expected result
 
 - stock is reserved atomically  
-- lifecycle events are written to outbox  
+- stock is reduced after fulfillment  
+- events are written to outbox  
 - events are published to Kafka  
 - projection service updates read model  
 
 ---
 
-**Result:**
+## Testing
 
-- stock is reserved atomically
-- lifecycle events are written to outbox
-- events are published to Kafka
-- projection service updates read model
+Tests focus on:
+
+- atomic reservation correctness  
+- multi-line consistency  
+- concurrency safety  
+- integration flows  
+
+<img width="1599" height="361" alt="image" src="https://github.com/user-attachments/assets/7efcb4a4-c7eb-44f3-be09-d273f9bd4e57" />
 
 ---
 
 ## Tech stack
 
-- Java 21
-- Spring Boot
-- Spring Data JPA
-- PostgreSQL
-- Flyway
-- Kafka
-- Maven
-
----
-
-## Why this project is relevant
-
-This project demonstrates:
-
-- transactional consistency
-- concurrency-safe stock reservation
-- event-driven backend design
-- outbox pattern implementation
-- separation of command-side and read-side
-
-It is designed to reflect real backend system behavior rather than simplified academic examples.
+- Java 21  
+- Spring Boot  
+- Spring Data JPA  
+- PostgreSQL  
+- Flyway  
+- Kafka  
+- Maven  
 
 ---
 
 ## Related service
 
-This project is designed to work together with:
+- [audit-projection-service](https://github.com/MaksimLapushkin/audit-projection-service)
 
-* [audit-projection-service](https://github.com/MaksimLapushkin/audit-projection-service)
+Consumes lifecycle events and builds:
 
-That service consumes Kafka order lifecycle events from `InventoryEngine` and builds:
-
-* append-only audit history
-* current order state projection
-* read-only endpoints for querying order timeline and latest status
-
-Together, the two repositories demonstrate a simple event-driven split between:
-
-* write-side / command-side logic in `InventoryEngine`
-* read-side / projection-side logic in `audit-projection-service`
+- audit history  
+- current state projection  
 
 ---
-
-## Testing
-
-The project includes tests focused on correctness of transactional and concurrency-sensitive logic.
-
-Testing focus includes:
-
-* reservation correctness
-* atomic multi-line behavior
-* concurrency-safe stock updates
-* integration coverage for backend flows
-<img width="1599" height="361" alt="image" src="https://github.com/user-attachments/assets/7efcb4a4-c7eb-44f3-be09-d273f9bd4e57" />
-
-
 
 ## Author
 
