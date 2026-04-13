@@ -148,6 +148,15 @@ cd InventoryEngine
 docker-compose up -d
 ```
 
+PostgreSQL starts with `inventory_engine` as the primary database and automatically initializes the additional `audit_projection` database for audit-projection-service.
+
+PostgreSQL init scripts run only when the data volume is first created. If the containers were already initialized before this setup existed, recreate the volume:
+
+```bash
+docker-compose down -v
+docker-compose up -d
+```
+
 ---
 
 ### 3. Run application
