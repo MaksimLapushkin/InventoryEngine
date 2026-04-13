@@ -37,3 +37,11 @@ build/
 
 # Environment files
 .env
+
+# local/debug outputs
+*.out
+*.dump
+*.txt
+
+# scripts output / manual exports
+/report*
