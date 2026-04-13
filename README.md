@@ -92,7 +92,7 @@ Events include:
 
 These events are consumed by:
 
-👉 audit-projection-service
+audit-projection-service
 
 ---
 
