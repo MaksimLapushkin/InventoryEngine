@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
 @SpringBootApplication
-public class giInventoryEngineApplication {
+public class InventoryEngineApplication {
     public static void main(String[] args) {
         SpringApplication.run(InventoryEngineApplication.class, args);
     }
