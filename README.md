@@ -24,7 +24,9 @@ The service handles:
 - stock tracking (available / reserved)
 - order creation
 - atomic stock reservation across multiple order lines
-- order cancellation and stock release
+- order reservation, fulfillment, and cancellation
+- order reservation, fulfillment, cancellation, and release flows
+
 
 All critical operations are transactional and consistent.
 
@@ -117,8 +119,7 @@ http://localhost:8080/swagger-ui/index.html
 
 Use it to explore endpoints and payloads.
 
-<img width="1679" height="755" alt="image" src="https://github.com/user-attachments/assets/2567ac54-c6b1-4471-8056-6a3d2fff76d3" />
-<img width="1660" height="580" alt="image" src="https://github.com/user-attachments/assets/8e2b91aa-b8c6-439e-a20e-2b358bb4e56a" />
+<img width="1715" height="768" alt="image" src="https://github.com/user-attachments/assets/38d6cd71-8f62-484e-b24c-ff12e86e939a" />
 
 ---
 
@@ -155,14 +156,6 @@ docker-compose up -d
 mvn spring-boot:run
 ```
 
-Or:
-
-- inspect request bodies  
-- explore response schemas  
-- understand endpoint structure and parameters  
-<img width="1776" height="788" alt="image" src="https://github.com/user-attachments/assets/1d701f37-8b8d-4674-afcd-798800823b88" />
-<img width="1737" height="576" alt="image" src="https://github.com/user-attachments/assets/244fefbe-4970-4079-979a-b411d32cf087" />
-
 ---
 
 ### 4. Access
@@ -178,10 +171,11 @@ A minimal end-to-end scenario:
 
 1. Create a warehouse  
 2. Create a product  
-3. Add stock to the warehouse  
+3. Add stock  
 4. Create an order  
 5. Reserve the order  
-6. Verify updated stock and order status  
+6. Fulfill the order  
+7. Verify updated stock and order status  
 
 <details>
 <summary>PowerShell demo</summary>
