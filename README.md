@@ -1,17 +1,18 @@
 # InventoryEngine
 
-InventoryEngine is a Spring Boot backend service that manages products, warehouses, stock, and orders, with a focus on **atomic stock reservation** and **event-driven architecture**.
+InventoryEngine is a Spring Boot backend service that manages products, warehouses, stock, and orders, with a focus on **atomic stock reservation**, **transactional consistency**, and **event-driven integration**.
 
 ---
 
 ## Architecture
 
-The system follows a command-side / read-side separation:
+The system follows a service-oriented event-driven design:
 
-- **InventoryEngine** → write-side / command-side  
-- **audit-projection-service** → read-side / projection-side  
+* **InventoryEngine** -> write-side / command-side for inventory and order domain logic
+* **delivery-service** -> consumes `ORDER_FULFILLED` and manages delivery lifecycle
+* **audit-projection-service** -> consumes order and delivery events to build read models
 
-InventoryEngine owns transactional domain logic and publishes lifecycle events to Kafka.
+InventoryEngine owns transactional order and stock logic and publishes lifecycle events to Kafka.
 
 ---
 
@@ -19,14 +20,14 @@ InventoryEngine owns transactional domain logic and publishes lifecycle events t
 
 The service handles:
 
-- product management
-- warehouse management
-- stock tracking (available / reserved)
-- order creation
-- atomic stock reservation across multiple order lines
-- order reservation, fulfillment, and cancellation
-- order reservation, fulfillment, cancellation, and release flows
-
+* product management
+* warehouse management
+* stock tracking (`available` / `reserved`)
+* order creation
+* capture of delivery/customer data at order creation time
+* atomic stock reservation across multiple order lines
+* order reservation, fulfillment, cancellation, and release flows
+* publishing order lifecycle events to Kafka
 
 All critical operations are transactional and consistent.
 
@@ -40,14 +41,14 @@ Orders may contain multiple lines.
 
 Reservation guarantees:
 
-- either **all items are reserved**
-- or **nothing is reserved**
+* either **all items are reserved**
+* or **nothing is reserved**
 
 Implemented using:
 
-- database-level conditional updates
-- transactional boundaries
-- deterministic processing order
+* database-level conditional updates
+* transactional boundaries
+* deterministic processing order
 
 ---
 
@@ -55,9 +56,9 @@ Implemented using:
 
 The system is designed to behave correctly under concurrent requests:
 
-- prevents overselling
-- uses safe update patterns
-- applies optimistic locking where appropriate
+* prevents overselling
+* uses safe update patterns
+* applies optimistic locking where appropriate
 
 ---
 
@@ -69,10 +70,12 @@ Problem:
 
 Solution:
 
-- domain changes and events are stored in `outbox_event` in the same transaction
-- background publisher reads `NEW` events
-- publishes to Kafka
-- marks them as `PUBLISHED`
+* domain changes and events are stored in `outbox_event` in the same transaction
+* background publisher reads pending events
+* publishes them to Kafka
+* marks them as published after successful delivery
+
+This prevents lost events and keeps integration reliable.
 
 ---
 
@@ -86,26 +89,29 @@ order.lifecycle.v1
 
 Events include:
 
-- `ORDER_CREATED`
-- `ORDER_RESERVED`
-- `ORDER_FULFILLED`
-- `ORDER_RELEASED`
-- `ORDER_CANCELLED`
+* `ORDER_CREATED`
+* `ORDER_RESERVED`
+* `ORDER_FULFILLED`
+* `ORDER_RELEASED`
+* `ORDER_CANCELLED`
+
+`ORDER_FULFILLED` includes a delivery/customer snapshot so downstream services can continue the workflow.
 
 These events are consumed by:
 
-audit-projection-service
+* **delivery-service**
+* **audit-projection-service**
 
 ---
 
 ## Main entities
 
-- Product  
-- Warehouse  
-- StockItem (composite key)  
-- Order  
-- OrderLine  
-- OutboxEvent  
+* Product
+* Warehouse
+* StockItem (composite key)
+* Order
+* OrderLine
+* OutboxEvent
 
 ---
 
@@ -113,7 +119,7 @@ audit-projection-service
 
 Swagger UI:
 
-```
+```text
 http://localhost:8080/swagger-ui/index.html
 ```
 
@@ -127,9 +133,9 @@ Use it to explore endpoints and payloads.
 
 ### Prerequisites
 
-- Java 21  
-- Maven  
-- Docker & Docker Compose  
+* Java 21
+* Maven
+* Docker & Docker Compose
 
 ---
 
@@ -148,6 +154,15 @@ cd InventoryEngine
 docker-compose up -d
 ```
 
+This starts:
+
+* PostgreSQL
+* Zookeeper
+* Kafka
+* Kafka UI
+
+The PostgreSQL init script creates the required databases automatically on first startup.
+
 ---
 
 ### 3. Run application
@@ -160,8 +175,9 @@ mvn spring-boot:run
 
 ### 4. Access
 
-- API: http://localhost:8080  
-- Swagger: http://localhost:8080/swagger-ui/index.html  
+* API: `http://localhost:8080`
+* Swagger: `http://localhost:8080/swagger-ui/index.html`
+* Kafka UI: `http://localhost:8081`
 
 ---
 
@@ -169,13 +185,15 @@ mvn spring-boot:run
 
 A minimal end-to-end scenario:
 
-1. Create a warehouse  
-2. Create a product  
-3. Add stock  
-4. Create an order  
-5. Reserve the order  
-6. Fulfill the order  
-7. Verify updated stock and order status  
+1. Create a warehouse
+2. Create a product
+3. Add stock
+4. Create an order with delivery data
+5. Reserve the order
+6. Fulfill the order
+7. Verify updated stock and order status
+8. Verify that `ORDER_FULFILLED` is published with delivery snapshot
+9. Verify downstream updates in delivery-service and audit-projection-service
 
 <details>
 <summary>PowerShell demo</summary>
@@ -196,10 +214,29 @@ $productId = $product.id
 $stockAdded = Invoke-RestMethod -Method POST -Uri "$base/api/stocks/add" -ContentType "application/json" -Body "{`"productId`":$productId,`"warehouseId`":$warehouseId,`"quantity`":10}"
 $stockAdded
 
-$order = Invoke-RestMethod -Method POST -Uri "$base/api/orders" -ContentType "application/json" -Body "{`"lines`":[{`"productId`":$productId,`"quantity`":3}]}"
+$orderBody = @"
+{
+  "customerName": "Max Lapushkin",
+  "deliveryAddress": "Vinohradska 123",
+  "deliveryCity": "Prague",
+  "deliveryPostalCode": "13000",
+  "customerPhone": "+420123456789",
+  "lines": [
+    {
+      "productId": $productId,
+      "quantity": 3
+    }
+  ]
+}
+"@
+
+$order = Invoke-RestMethod -Method POST -Uri "$base/api/orders" -ContentType "application/json" -Body $orderBody
 $order
 
 $orderId = $order.id
+
+$orderAfterCreate = Invoke-RestMethod -Method GET -Uri "$base/api/orders/$orderId"
+$orderAfterCreate
 
 $reservedOrder = Invoke-RestMethod -Method POST -Uri "$base/api/orders/$orderId/reserve?warehouseId=$warehouseId"
 $reservedOrder
@@ -228,11 +265,13 @@ $stockAfterFulfill
 
 ## Expected result
 
-- stock is reserved atomically  
-- stock is reduced after fulfillment  
-- events are written to outbox  
-- events are published to Kafka  
-- projection service updates read model  
+* stock is reserved atomically
+* stock is reduced after fulfillment
+* events are written to outbox
+* events are published to Kafka
+* `ORDER_FULFILLED` includes delivery/customer data
+* delivery-service can create a delivery from the event
+* audit-projection-service updates the read model
 
 ---
 
@@ -240,10 +279,11 @@ $stockAfterFulfill
 
 Tests focus on:
 
-- atomic reservation correctness  
-- multi-line consistency  
-- concurrency safety  
-- integration flows  
+* atomic reservation correctness
+* multi-line consistency
+* concurrency safety
+* integration flows
+* event publishing consistency
 
 <img width="1599" height="361" alt="image" src="https://github.com/user-attachments/assets/7efcb4a4-c7eb-44f3-be09-d273f9bd4e57" />
 
@@ -251,24 +291,37 @@ Tests focus on:
 
 ## Tech stack
 
-- Java 21  
-- Spring Boot  
-- Spring Data JPA  
-- PostgreSQL  
-- Flyway  
-- Kafka  
-- Maven  
+* Java 21
+* Spring Boot
+* Spring Data JPA
+* Hibernate
+* PostgreSQL
+* Flyway
+* Kafka
+* Maven
 
 ---
 
-## Related service
+## Related services
 
-- [audit-projection-service](https://github.com/MaksimLapushkin/audit-projection-service)
+* [delivery-service](https://github.com/MaksimLapushkin/delivery-serivce)
+* [audit-projection-service](https://github.com/MaksimLapushkin/audit-projection-service)
 
-Consumes lifecycle events and builds:
+### delivery-service
 
-- audit history  
-- current state projection  
+Consumes `ORDER_FULFILLED` and manages:
+
+* delivery creation
+* delivery lifecycle transitions
+* delivery timeline
+* delivery outbox publishing
+
+### audit-projection-service
+
+Consumes order and delivery events and builds:
+
+* audit history
+* current state projection
 
 ---
 
