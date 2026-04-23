@@ -6,4 +6,9 @@ SELECT format('CREATE DATABASE %I', 'audit_projection')
 WHERE NOT EXISTS (
   SELECT 1 FROM pg_database WHERE datname = 'audit_projection'
 )\gexec
+
+SELECT format('CREATE DATABASE %I', 'delivery_db')
+WHERE NOT EXISTS (
+  SELECT 1 FROM pg_database WHERE datname = 'delivery_db'
+)\gexec
 SQL
